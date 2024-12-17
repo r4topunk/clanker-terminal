@@ -21,7 +21,11 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const cast = webhookData.data;
-  if (!cast.text.includes("clanker.world")) {
+  if (
+    cast.author.username !== "clanker" ||
+    !cast.text.includes("clanker.world")
+  ) {
+    console.error("Not a deploy event:", cast);
     return new Response(null, {
       status: 400,
       statusText: "Not a deploy event",
