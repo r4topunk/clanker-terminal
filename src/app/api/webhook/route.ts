@@ -1,6 +1,5 @@
-import { envs } from "@/lib/env";
+import discord from "@/lib/discord";
 import neynar from "@/lib/neynar";
-import { REST } from "@discordjs/rest";
 import { Cast } from "@neynar/nodejs-sdk/build/api";
 import { Routes } from "discord-api-types/v10";
 
@@ -59,9 +58,8 @@ export async function POST(request: Request): Promise<Response> {
   message += `[warpcast](<https://warpcast.com/${cast.author.username}/${cast.hash}>)\n`;
   message += `\`\`\`${cast.text}\`\`\``;
 
-  const rest = new REST({ version: "10" }).setToken(envs.DISCORD_TOKEN);
   try {
-    await rest.post(Routes.channelMessages(CHANNEL_ID), {
+    await discord.post(Routes.channelMessages(CHANNEL_ID), {
       body: {
         content: message,
       },
