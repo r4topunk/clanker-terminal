@@ -32,6 +32,25 @@ async function getUserRelevancyScore(fid: number) {
   );
 }
 
+async function getUserLastClankerMentions(fid: number) {
+  const { casts } = await neynar.fetchCastsForUser({ fid });
+  if (!casts.length) {
+    return [];
+  }
+
+  return casts.map((cast) => {
+    if (
+      cast.mentioned_profiles.some((profile) => profile.username === "clanker")
+    ) {
+      return {
+        likes: cast.reactions.likes_count,
+        recasts: cast.reactions.recasts_count,
+        replies: cast.replies.count,
+      };
+    }
+  });
+}
+
 export async function processCast(cast: Cast): Promise<string> {
   if (!isDeployEvent(cast)) {
     throw new Error("Not a deploy event");
@@ -54,14 +73,28 @@ export async function processCast(cast: Cast): Promise<string> {
     throw new Error("Deployer does not meet requirements");
   }
 
+  const lastMentions = await getUserLastClankerMentions(deployerInfo.fid);
+  const clankerInteractionsRelevancy = lastMentions.reduce((sum, mention) => {
+    if (mention) {
+      return sum + mention.likes + mention.recasts + mention.replies;
+    }
+    return sum;
+  }, 0);
+
   const totalRelevancyScore = await getUserRelevancyScore(deployerInfo.fid);
+
+  console.log(lastMentions);
 
   const discordMessage = [
     "~~                        ~~",
-    `new clank deployed to [${deployerInfo.username}](<https://warpcast.com/${deployerInfo.username}>)!`,
-    `followers: ${deployerFollowers}`,
-    `neynar score: ${deployerNeynarScore}`,
-    `relevancy: ${totalRelevancyScore}`,
+    `### ${new Date(cast.timestamp).toLocaleString()}`,
+    `- [${deployerInfo.username}](<https://warpcast.com/${deployerInfo.username}>)`,
+    `- followers: ${deployerFollowers}`,
+    `- relevancy: ${totalRelevancyScore}`,
+    `- neynar score: ${deployerNeynarScore}`,
+    `**clanker interactions**`,
+    `- relevancy: ${clankerInteractionsRelevancy}`,
+    `- quantity: ${lastMentions.length}`,
     `[clankerworld](<https://clanker.world/clanker/${contractAddress}>) - [warpcast](<https://warpcast.com/${cast.author.username}/${cast.hash}>)`,
     `\`\`\`${cast.text.split("\n")[0]}\`\`\``,
   ].join("\n");
