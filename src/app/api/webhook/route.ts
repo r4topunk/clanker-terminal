@@ -4,7 +4,7 @@ import { Routes } from "discord-api-types/v10";
 
 export const dynamic = "force-dynamic";
 
-const PROD_CHANNEL_ID = "1318413688465653881";
+// const PROD_CHANNEL_ID = "1318413688465653881";
 const DEV_CHANNEL_ID = "1318414177294880788";
 const CHANNEL_ID = DEV_CHANNEL_ID;
 // process.env.NODE_ENV === "production" ? PROD_CHANNEL_ID : DEV_CHANNEL_ID;
