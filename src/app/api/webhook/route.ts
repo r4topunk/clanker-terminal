@@ -19,6 +19,7 @@ export async function POST(request: Request) {
   try {
     webhookData = await request.json();
   } catch (error) {
+    console.error(error);
     return handleBadResponse(400, "Invalid JSON");
   }
 
