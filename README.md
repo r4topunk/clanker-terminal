@@ -1,36 +1,58 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🤖 Clanker Terminal
+
+> Your command center for tracking Clanker bot's latest token alerts on Farcaster.
+
+## Tech Stack
+
+- Next.js 14 (App Router)
+- Tailwind CSS
+- shadcn/ui
+- Discord SDK
+- Neynar SDK
+- Webhooks
+
+## What is this?
+
+Clanker Terminal is a real-time dashboard that plugs into the Clanker bot's neural network. It monitors and displays token alerts broadcasted through Farcaster casts, giving you the edge in the web3 social landscape.
+
+## Features
+
+- 🚀 Real-time token cast monitoring
+- 💬 Discord integration
+- ⚡ Webhook endpoint for instant notifications
+- 🎯 Clean, minimal UI built with shadcn
+- 🔥 Optimized performance with Next.js 14
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+# Clone the repo
+git clone https://github.com/r4topunk/clanker-terminal
+
+# Install dependencies
+pnpm install
+
+# Set up environment variables
+cp .env.example .env.local
+
+# Run the development server
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Configuration
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Create a `.env.local` file with:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```env
+DISCORD_TOKEN=your_discord_token
+NEYNAR_API_KEY=your_neynar_key
+WEBHOOK_SECRET=your_webhook_secret
+```
 
-## Learn More
+## License
 
-To learn more about Next.js, take a look at the following resources:
+MIT
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Contributing
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+PRs and issues welcome. WAGMI 🫡
