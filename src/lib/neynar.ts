@@ -1,6 +1,5 @@
-import { NeynarAPIClient, Configuration } from "@neynar/nodejs-sdk";
+import { Configuration, NeynarAPIClient } from "@neynar/nodejs-sdk";
 import { envs } from "./env";
-import { headers } from "next/headers";
 
 const config = new Configuration({
   apiKey: envs.NEYNAR_API_KEY,
