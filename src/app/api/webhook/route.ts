@@ -1,4 +1,5 @@
-import { config } from "@/lib/env";
+import { envs } from "@/lib/env";
+import neynar from "@/lib/neynar";
 import { REST } from "@discordjs/rest";
 import { Routes } from "discord-api-types/v10";
 
@@ -12,18 +13,30 @@ const CHANNEL_ID = DEV_CHANNEL_ID;
 export async function POST(request: Request): Promise<Response> {
   const hook = (await request.json()) as WebhookRequest;
   if (!hook) {
+    console.error("No data on webhook");
     return Response.json({ data: "No data" });
   }
 
   const cast = hook.data;
+
   if (!cast.text.includes("clanker.world")) {
+    console.error("Not a deploy");
     return Response.json({ data: "Not a deploy" });
   }
 
-  let message = `${cast.author.username} deployed a new token to ${cast.parent_author.fid}!`;
+  const searchUser = await neynar.lookupUserByUsername({
+    username: cast.parent_author.fid.toString(),
+  });
+  if (!searchUser || !searchUser.user) {
+    console.error("No deployer");
+    return Response.json({ data: "No deployer" });
+  }
+  const deployer = searchUser.user;
+
+  let message = `${cast.author.username} deployed a new token to ${deployer.username}!`;
   message += `\n\n\`\`\`${cast.text}\`\`\``;
 
-  const rest = new REST({ version: "10" }).setToken(config.DISCORD_TOKEN);
+  const rest = new REST({ version: "10" }).setToken(envs.DISCORD_TOKEN);
   try {
     await rest.post(Routes.channelMessages(CHANNEL_ID), {
       body: {
