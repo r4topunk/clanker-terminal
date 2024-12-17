@@ -14,26 +14,26 @@ interface WebhookData {
 export async function POST(request: Request): Promise<Response> {
   const webhookData: WebhookData = await request.json();
   if (!webhookData) {
-    return new Response(JSON.stringify({ error: "No webhook data provided" }), {
+    return new Response(null, {
       status: 400,
+      statusText: "No webhook data provided",
     });
   }
 
   const cast = webhookData.data;
   if (!cast.text.includes("clanker.world")) {
-    return new Response(JSON.stringify({ error: "Not a deploy event" }), {
+    return new Response(null, {
       status: 400,
+      statusText: "Not a deploy event",
     });
   }
 
   const contractAddressMatch = cast.text.match(/0x[a-fA-F0-9]{40}/);
   if (!contractAddressMatch) {
-    return new Response(
-      JSON.stringify({ error: "No contract address found" }),
-      {
-        status: 400,
-      }
-    );
+    return new Response(null, {
+      status: 400,
+      statusText: "No contract address found",
+    });
   }
   const contractAddress = contractAddressMatch[0];
 
@@ -41,8 +41,9 @@ export async function POST(request: Request): Promise<Response> {
     fids: [cast.parent_author.fid],
   });
   if (!userResponse.users.length) {
-    return new Response(JSON.stringify({ error: "Deployer not found" }), {
-      status: 404,
+    return new Response(null, {
+      status: 400,
+      statusText: "Deployer not found",
     });
   }
   const deployerInfo = userResponse.users[0];
@@ -55,12 +56,10 @@ export async function POST(request: Request): Promise<Response> {
   const deployerFollowers = deployerInfo.follower_count;
 
   if (deployerNeynarScore < 0.6 || deployerFollowers < 100) {
-    return new Response(
-      JSON.stringify({ error: "Deployer does not meet requirements" }),
-      {
-        status: 400,
-      }
-    );
+    return new Response(null, {
+      status: 400,
+      statusText: "Deployer does not meet requirements",
+    });
   }
 
   const totalRelevancyScore =
@@ -88,12 +87,10 @@ export async function POST(request: Request): Promise<Response> {
     });
   } catch (error) {
     console.error("Failed to send Discord message:", error);
-    return new Response(
-      JSON.stringify({ error: "Failed to send Discord message" }),
-      {
-        status: 500,
-      }
-    );
+    return new Response(null, {
+      status: 500,
+      statusText: "Failed to send Discord message",
+    });
   }
 
   return Response.json({ success: true });
