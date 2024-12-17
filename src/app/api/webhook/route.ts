@@ -51,6 +51,18 @@ export async function POST(request: Request): Promise<Response> {
     viewerFid: 196328,
   });
 
+  const deployerNeynarScore = deployerInfo.experimental?.neynar_user_score || 0;
+  const deployerFollowers = deployerInfo.follower_count;
+
+  if (deployerNeynarScore < 0.6 || deployerFollowers < 100) {
+    return new Response(
+      JSON.stringify({ error: "Deployer does not meet requirements" }),
+      {
+        status: 400,
+      }
+    );
+  }
+
   const totalRelevancyScore =
     deployerRelevancyData.top_relevant_followers_hydrated.reduce(
       (sum, follower) => sum + (follower.user?.follower_count || 0),
@@ -60,8 +72,8 @@ export async function POST(request: Request): Promise<Response> {
   const discordMessage = [
     "~~                        ~~",
     `new clank deployed to [${deployerInfo.username}](<https://warpcast.com/${deployerInfo.username}>)!`,
-    `followers: ${deployerInfo.follower_count}`,
-    `score: ${deployerInfo.experimental?.neynar_user_score}`,
+    `followers: ${deployerFollowers}`,
+    `neynar score: ${deployerNeynarScore}`,
     `relevancy: ${totalRelevancyScore}`,
     `[clankerworld](<https://clanker.world/clanker/${contractAddress}>)`,
     `[warpcast](<https://warpcast.com/${cast.author.username}/${cast.hash}>)`,
