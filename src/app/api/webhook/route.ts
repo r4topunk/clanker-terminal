@@ -19,22 +19,37 @@ export async function POST(request: Request): Promise<Response> {
 
   const cast = hook.data;
 
-  if (!cast.text.includes("clanker.world")) {
-    console.error("Not a deploy");
-    return Response.json({ data: "Not a deploy" });
-  }
+  // if (!cast.text.includes("clanker.world")) {
+  //   console.error("Not a deploy");
+  //   return Response.json({ data: "Not a deploy" });
+  // }
 
-  const searchUser = await neynar.lookupUserByUsername({
-    username: cast.parent_author.fid.toString(),
+  const fetchBulkUsers = await neynar.fetchBulkUsers({
+    fids: [cast.parent_author.fid],
   });
-  if (!searchUser || !searchUser.user) {
+  if (!fetchBulkUsers.users.length) {
     console.error("No deployer");
     return Response.json({ data: "No deployer" });
   }
-  const deployer = searchUser.user;
+  const deployer = fetchBulkUsers.users[0];
+  const deployerRelevancy = await neynar.fetchRelevantFollowers({
+    targetFid: deployer.fid,
+    viewerFid: 196328,
+  });
 
-  let message = `${cast.author.username} deployed a new token to ${deployer.username}!`;
-  message += `\n\n\`\`\`${cast.text}\`\`\``;
+  let relevancy = 0;
+  deployerRelevancy.top_relevant_followers_hydrated.forEach((follower) => {
+    relevancy += follower.user?.follower_count || 0;
+  });
+
+  let message = `~~                        ~~\n`;
+  message += `new clank deployed to [${deployer.username}](<https://warpcast.com/${deployer.username}>)!\n`;
+  message += `followers: ${deployer.follower_count}\n`;
+  message += `score: ${deployer.experimental?.neynar_user_score}\n`;
+  message += `relevancy: ${relevancy}\n`;
+  message += `[clankerworld](<https://clanker.world/${cast.hash}>)\n`;
+  message += `[warpcast](<https://warpcast.com/${deployer.username}/${cast.hash}>)\n`;
+  message += `\`\`\`${cast.text}\`\`\``;
 
   const rest = new REST({ version: "10" }).setToken(envs.DISCORD_TOKEN);
   try {
