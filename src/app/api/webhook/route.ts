@@ -20,10 +20,10 @@ export async function POST(request: Request): Promise<Response> {
 
   const cast: Cast = hook.data;
 
-  // if (!cast.text.includes("clanker.world")) {
-  //   console.error("Not a deploy");
-  //   return Response.json({ data: "Not a deploy" });
-  // }
+  if (!cast.text.includes("clanker.world")) {
+    console.error("Not a deploy");
+    return Response.json({ data: "Not a deploy" });
+  }
 
   const fetchBulkUsers = await neynar.fetchBulkUsers({
     fids: [cast.parent_author.fid],
