@@ -51,7 +51,7 @@ export async function POST(request: Request): Promise<Response> {
   message += `followers: ${deployer.follower_count}\n`;
   message += `score: ${deployer.experimental?.neynar_user_score}\n`;
   message += `relevancy: ${relevancy}\n`;
-  message += `[clankerworld](<https://clanker.world/${contractAddress}>)\n`;
+  message += `[clankerworld](<https://clanker.world/clanker/${contractAddress}>)\n`;
   message += `[warpcast](<https://warpcast.com/${cast.author.username}/${cast.hash}>)\n`;
   message += `\`\`\`${cast.text}\`\`\``;
 
