@@ -11,13 +11,30 @@ interface WebhookData {
   data: Cast;
 }
 
+function handleBadResponse(
+  status: number,
+  statusText: string,
+  error: object | unknown = null
+): Response {
+  if (error) {
+    console.error(statusText, error);
+  }
+  return new Response(null, {
+    status,
+    statusText,
+  });
+}
+
 export async function POST(request: Request): Promise<Response> {
-  const webhookData: WebhookData = await request.json();
+  let webhookData: WebhookData;
+  try {
+    webhookData = await request.json();
+  } catch (error) {
+    return handleBadResponse(400, "Invalid JSON", error);
+  }
+
   if (!webhookData) {
-    return new Response(null, {
-      status: 400,
-      statusText: "No webhook data provided",
-    });
+    return handleBadResponse(400, "No webhook data provided");
   }
 
   const cast = webhookData.data;
@@ -25,45 +42,43 @@ export async function POST(request: Request): Promise<Response> {
     cast.author.username !== "clanker" ||
     !cast.text.includes("clanker.world")
   ) {
-    console.error("Not a deploy event:", cast);
-    return new Response(null, {
-      status: 400,
-      statusText: "Not a deploy event",
-    });
+    return handleBadResponse(400, "Not a deploy event", cast);
   }
 
   const contractAddressMatch = cast.text.match(/0x[a-fA-F0-9]{40}/);
   if (!contractAddressMatch) {
-    return new Response(null, {
-      status: 400,
-      statusText: "No contract address found",
-    });
+    return handleBadResponse(400, "No contract address found");
   }
   const contractAddress = contractAddressMatch[0];
 
-  const userResponse = await neynar.fetchBulkUsers({
-    fids: [cast.parent_author.fid],
-  });
-  if (!userResponse.users.length) {
-    return new Response(null, {
-      status: 400,
-      statusText: "Deployer not found",
+  let userResponse;
+  try {
+    userResponse = await neynar.fetchBulkUsers({
+      fids: [cast.parent_author.fid],
     });
+  } catch (error) {
+    return handleBadResponse(500, "Failed to fetch user data", error);
+  }
+
+  if (!userResponse.users.length) {
+    return handleBadResponse(400, "Deployer not found");
   }
   const deployerInfo = userResponse.users[0];
-  const deployerRelevancyData = await neynar.fetchRelevantFollowers({
-    targetFid: deployerInfo.fid,
-    viewerFid: 196328,
-  });
+  let deployerRelevancyData;
+  try {
+    deployerRelevancyData = await neynar.fetchRelevantFollowers({
+      targetFid: deployerInfo.fid,
+      viewerFid: 196328,
+    });
+  } catch (error) {
+    return handleBadResponse(500, "Failed to fetch relevancy data", error);
+  }
 
   const deployerNeynarScore = deployerInfo.experimental?.neynar_user_score || 0;
   const deployerFollowers = deployerInfo.follower_count;
 
   if (deployerNeynarScore < 0.6 || deployerFollowers < 100) {
-    return new Response(null, {
-      status: 400,
-      statusText: "Deployer does not meet requirements",
-    });
+    return handleBadResponse(400, "Deployer does not meet requirements");
   }
 
   const totalRelevancyScore =
@@ -90,11 +105,7 @@ export async function POST(request: Request): Promise<Response> {
       },
     });
   } catch (error) {
-    console.error("Failed to send Discord message:", error);
-    return new Response(null, {
-      status: 500,
-      statusText: "Failed to send Discord message",
-    });
+    return handleBadResponse(500, "Failed to send Discord message", error);
   }
 
   return Response.json({ success: true });
