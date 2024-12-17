@@ -1,7 +1,7 @@
 import { envs } from "@/lib/env";
 import neynar from "@/lib/neynar";
 import { REST } from "@discordjs/rest";
-import { CastResponse } from "@neynar/nodejs-sdk/build/api";
+import { Cast } from "@neynar/nodejs-sdk/build/api";
 import { Routes } from "discord-api-types/v10";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +18,7 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ data: "No data" });
   }
 
-  const { cast } = hook as CastResponse;
+  const cast: Cast = hook.data;
 
   // if (!cast.text.includes("clanker.world")) {
   //   console.error("Not a deploy");
