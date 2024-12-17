@@ -5,65 +5,84 @@ import { Cast } from "@neynar/nodejs-sdk/build/api";
 import { Routes } from "discord-api-types/v10";
 
 export const dynamic = "force-dynamic";
-const CHANNEL_ID = envs.DISCORD_CHANNEL_ID;
+const DISCORD_CHANNEL_ID = envs.DISCORD_CHANNEL_ID;
+
+interface WebhookData {
+  data: Cast;
+}
 
 export async function POST(request: Request): Promise<Response> {
-  const hook = await request.json();
-  if (!hook) {
-    console.error("No data on webhook");
-    return Response.json({ data: "No data" });
+  const webhookData: WebhookData = await request.json();
+  if (!webhookData) {
+    return new Response(JSON.stringify({ error: "No webhook data provided" }), {
+      status: 400,
+    });
   }
 
-  const cast: Cast = hook.data;
-
+  const cast = webhookData.data;
   if (!cast.text.includes("clanker.world")) {
-    console.error("Not a deploy");
-    return Response.json({ data: "Not a deploy" });
+    return new Response(JSON.stringify({ error: "Not a deploy event" }), {
+      status: 400,
+    });
   }
 
   const contractAddressMatch = cast.text.match(/0x[a-fA-F0-9]{40}/);
   if (!contractAddressMatch) {
-    console.error("No contract address found");
-    return Response.json({ data: "No contract address found" });
+    return new Response(
+      JSON.stringify({ error: "No contract address found" }),
+      {
+        status: 400,
+      }
+    );
   }
   const contractAddress = contractAddressMatch[0];
 
-  const fetchBulkUsers = await neynar.fetchBulkUsers({
+  const userResponse = await neynar.fetchBulkUsers({
     fids: [cast.parent_author.fid],
   });
-  if (!fetchBulkUsers.users.length) {
-    console.error("No deployer");
-    return Response.json({ data: "No deployer" });
+  if (!userResponse.users.length) {
+    return new Response(JSON.stringify({ error: "Deployer not found" }), {
+      status: 404,
+    });
   }
-  const deployer = fetchBulkUsers.users[0];
-  const deployerRelevancy = await neynar.fetchRelevantFollowers({
-    targetFid: deployer.fid,
+  const deployerInfo = userResponse.users[0];
+  const deployerRelevancyData = await neynar.fetchRelevantFollowers({
+    targetFid: deployerInfo.fid,
     viewerFid: 196328,
   });
 
-  let relevancy = 0;
-  deployerRelevancy.top_relevant_followers_hydrated.forEach((follower) => {
-    relevancy += follower.user?.follower_count || 0;
-  });
+  const totalRelevancyScore =
+    deployerRelevancyData.top_relevant_followers_hydrated.reduce(
+      (sum, follower) => sum + (follower.user?.follower_count || 0),
+      0
+    );
 
-  let message = `~~                        ~~\n`;
-  message += `new clank deployed to [${deployer.username}](<https://warpcast.com/${deployer.username}>)!\n`;
-  message += `followers: ${deployer.follower_count}\n`;
-  message += `score: ${deployer.experimental?.neynar_user_score}\n`;
-  message += `relevancy: ${relevancy}\n`;
-  message += `[clankerworld](<https://clanker.world/clanker/${contractAddress}>)\n`;
-  message += `[warpcast](<https://warpcast.com/${cast.author.username}/${cast.hash}>)\n`;
-  message += `\`\`\`${cast.text}\`\`\``;
+  const discordMessage = [
+    "~~                        ~~",
+    `new clank deployed to [${deployerInfo.username}](<https://warpcast.com/${deployerInfo.username}>)!`,
+    `followers: ${deployerInfo.follower_count}`,
+    `score: ${deployerInfo.experimental?.neynar_user_score}`,
+    `relevancy: ${totalRelevancyScore}`,
+    `[clankerworld](<https://clanker.world/clanker/${contractAddress}>)`,
+    `[warpcast](<https://warpcast.com/${cast.author.username}/${cast.hash}>)`,
+    `\`\`\`${cast.text}\`\`\``,
+  ].join("\n");
 
   try {
-    await discord.post(Routes.channelMessages(CHANNEL_ID), {
+    await discord.post(Routes.channelMessages(DISCORD_CHANNEL_ID), {
       body: {
-        content: message,
+        content: discordMessage,
       },
     });
   } catch (error) {
-    console.error(error);
+    console.error("Failed to send Discord message:", error);
+    return new Response(
+      JSON.stringify({ error: "Failed to send Discord message" }),
+      {
+        status: 500,
+      }
+    );
   }
 
-  return Response.json({ data: "Hello World" });
+  return Response.json({ success: true });
 }
