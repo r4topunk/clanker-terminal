@@ -76,7 +76,7 @@ export async function POST(request: Request): Promise<Response> {
     `relevancy: ${totalRelevancyScore}`,
     `[clankerworld](<https://clanker.world/clanker/${contractAddress}>)`,
     `[warpcast](<https://warpcast.com/${cast.author.username}/${cast.hash}>)`,
-    `\`\`\`${cast.text}\`\`\``,
+    `\`\`\`${cast.text.split("\n")[0]}\`\`\``,
   ].join("\n");
 
   try {
