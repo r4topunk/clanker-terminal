@@ -25,6 +25,13 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ data: "Not a deploy" });
   }
 
+  const contractAddressMatch = cast.text.match(/0x[a-fA-F0-9]{40}/);
+  if (!contractAddressMatch) {
+    console.error("No contract address found");
+    return Response.json({ data: "No contract address found" });
+  }
+  const contractAddress = contractAddressMatch[0];
+
   const fetchBulkUsers = await neynar.fetchBulkUsers({
     fids: [cast.parent_author.fid],
   });
@@ -48,8 +55,8 @@ export async function POST(request: Request): Promise<Response> {
   message += `followers: ${deployer.follower_count}\n`;
   message += `score: ${deployer.experimental?.neynar_user_score}\n`;
   message += `relevancy: ${relevancy}\n`;
-  message += `[clankerworld](<https://clanker.world/${cast.hash}>)\n`;
-  message += `[warpcast](<https://warpcast.com/${deployer.username}/${cast.hash}>)\n`;
+  message += `[clankerworld](<https://clanker.world/${contractAddress}>)\n`;
+  message += `[warpcast](<https://warpcast.com/${cast.author.username}/${cast.hash}>)\n`;
   message += `\`\`\`${cast.text}\`\`\``;
 
   const rest = new REST({ version: "10" }).setToken(envs.DISCORD_TOKEN);
