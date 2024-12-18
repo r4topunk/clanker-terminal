@@ -33,22 +33,26 @@ async function getUserRelevancyScore(fid: number) {
 }
 
 async function getUserLastClankerMentions(fid: number) {
-  const { casts } = await neynar.fetchCastsForUser({ fid });
+  const { casts } = await neynar.fetchCastsForUser({ fid, limit: 150 });
   if (!casts.length) {
     return [];
   }
 
-  return casts.map((cast) => {
-    if (
-      cast.mentioned_profiles.some((profile) => profile.username === "clanker")
-    ) {
-      return {
-        likes: cast.reactions.likes_count,
-        recasts: cast.reactions.recasts_count,
-        replies: cast.replies.count,
-      };
-    }
-  });
+  return casts
+    .map((cast) => {
+      if (
+        cast.mentioned_profiles.some(
+          (profile) => profile.username === "clanker"
+        )
+      ) {
+        return {
+          likes: cast.reactions.likes_count,
+          recasts: cast.reactions.recasts_count,
+          replies: cast.replies.count,
+        };
+      }
+    })
+    .filter((item) => item !== undefined);
 }
 
 export async function processCast(cast: Cast): Promise<string> {
