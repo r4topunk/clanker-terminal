@@ -1,13 +1,13 @@
 import neynar from "@/lib/neynar";
 import { Cast } from "@neynar/nodejs-sdk/build/api";
 
-function isDeployEvent(cast: Cast): boolean {
+export function isDeployEvent(cast: Cast): boolean {
   return (
     cast.author.username === "clanker" && cast.text.includes("clanker.world")
   );
 }
 
-function extractContractAddress(castText: string): string | null {
+export function extractContractAddress(castText: string): string | null {
   const contractAddressMatch = castText.match(/0x[a-fA-F0-9]{40}/);
   return contractAddressMatch ? contractAddressMatch[0] : null;
 }
@@ -55,7 +55,23 @@ async function getUserLastClankerMentions(fid: number) {
     .filter((item) => item !== undefined);
 }
 
-export async function processCast(cast: Cast): Promise<string> {
+export interface DeploymentData {
+  timestamp: string;
+  username: string;
+  followers: number;
+  // relevancyScore: number;
+  neynarScore: number;
+  // clankerInteractions: {
+  //   relevancy: number;
+  //   quantity: number;
+  // };
+  contractAddress: string;
+  castHash: string;
+  // castAuthor: string;
+  // castText: string;
+}
+
+export async function processCast(cast: Cast): Promise<DeploymentData> {
   if (!isDeployEvent(cast)) {
     throw new Error("Not a deploy event");
   }
@@ -77,31 +93,45 @@ export async function processCast(cast: Cast): Promise<string> {
     throw new Error("Deployer does not meet requirements");
   }
 
-  const lastMentions = await getUserLastClankerMentions(deployerInfo.fid);
-  const clankerInteractionsRelevancy = lastMentions.reduce((sum, mention) => {
-    if (mention) {
-      return sum + mention.likes + mention.recasts + mention.replies;
-    }
-    return sum;
-  }, 0);
+  // const lastMentions = await getUserLastClankerMentions(deployerInfo.fid);
+  // const clankerInteractionsRelevancy = lastMentions.reduce((sum, mention) => {
+  //   if (mention) {
+  //     return sum + mention.likes + mention.recasts + mention.replies;
+  //   }
+  //   return sum;
+  // }, 0);
 
-  const totalRelevancyScore = await getUserRelevancyScore(deployerInfo.fid);
+  // const totalRelevancyScore = await getUserRelevancyScore(deployerInfo.fid);
 
-  console.log(lastMentions);
+  return {
+    timestamp: cast.timestamp,
+    username: deployerInfo.username,
+    followers: deployerFollowers,
+    // relevancyScore: totalRelevancyScore,
+    neynarScore: deployerNeynarScore,
+    // clankerInteractions: {
+    //   relevancy: clankerInteractionsRelevancy,
+    //   quantity: lastMentions.length,
+    // },
+    contractAddress,
+    castHash: cast.hash,
+    // castAuthor: cast.author.username,
+    // castText: cast.text.split("\n")[0],
+  };
+}
 
-  const discordMessage = [
+export function formatDiscordMessage(data: DeploymentData): string {
+  return [
     "~~                        ~~",
-    `### ${new Date(cast.timestamp).toLocaleString()}`,
-    `- [${deployerInfo.username}](<https://warpcast.com/${deployerInfo.username}>)`,
-    `- followers: ${deployerFollowers}`,
-    `- relevancy: ${totalRelevancyScore}`,
-    `- neynar score: ${deployerNeynarScore}`,
+    `### ${data.timestamp}`,
+    `- [${data.username}](<https://warpcast.com/${data.username}>)`,
+    `- followers: ${data.followers}`,
+    `- relevancy: ${data.relevancyScore}`,
+    `- neynar score: ${data.neynarScore}`,
     `**clanker interactions**`,
-    `- relevancy: ${clankerInteractionsRelevancy}`,
-    `- quantity: ${lastMentions.length}`,
-    `[clankerworld](<https://clanker.world/clanker/${contractAddress}>) - [warpcast](<https://warpcast.com/${cast.author.username}/${cast.hash}>)`,
-    `\`\`\`${cast.text.split("\n")[0]}\`\`\``,
+    `- relevancy: ${data.clankerInteractions.relevancy}`,
+    `- quantity: ${data.clankerInteractions.quantity}`,
+    `[clankerworld](<https://clanker.world/clanker/${data.contractAddress}>) - [warpcast](<https://warpcast.com/${data.castAuthor}/${data.castHash}>)`,
+    `\`\`\`${data.castText}\`\`\``,
   ].join("\n");
-
-  return discordMessage;
 }
