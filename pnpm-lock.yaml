@@ -12,8 +12,8 @@ importers:
         specifier: ^2.4.0
         version: 2.4.0
       '@neynar/nodejs-sdk':
-        specifier: ^2.3.0
-        version: 2.3.0(typescript@5.7.2)
+        specifier: ^2.4.0
+        version: 2.4.0(typescript@5.7.2)
       '@radix-ui/react-dropdown-menu':
         specifier: ^2.1.4
         version: 2.1.4(@types/react-dom@18.3.5(@types/react@18.3.17))(@types/react@18.3.17)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -39,10 +39,10 @@ importers:
         specifier: ^0.4.4
         version: 0.4.4(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       react:
-        specifier: ^18
+        specifier: ^18.3.1
         version: 18.3.1
       react-dom:
-        specifier: ^18
+        specifier: ^18.3.1
         version: 18.3.1(react@18.3.1)
       tailwind-merge:
         specifier: ^2.5.5
@@ -52,28 +52,28 @@ importers:
         version: 1.0.7(tailwindcss@3.4.16)
     devDependencies:
       '@types/node':
-        specifier: ^20
+        specifier: ^20.17.10
         version: 20.17.10
       '@types/react':
-        specifier: ^18
+        specifier: ^18.3.17
         version: 18.3.17
       '@types/react-dom':
-        specifier: ^18
+        specifier: ^18.3.5
         version: 18.3.5(@types/react@18.3.17)
       eslint:
-        specifier: ^8
+        specifier: ^8.57.1
         version: 8.57.1
       eslint-config-next:
         specifier: 14.2.16
         version: 14.2.16(eslint@8.57.1)(typescript@5.7.2)
       postcss:
-        specifier: ^8
+        specifier: ^8.4.49
         version: 8.4.49
       tailwindcss:
-        specifier: ^3.4.1
+        specifier: ^3.4.16
         version: 3.4.16
       typescript:
-        specifier: ^5
+        specifier: ^5.7.2
         version: 5.7.2
 
 packages:
@@ -270,8 +270,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@neynar/nodejs-sdk@2.3.0':
-    resolution: {integrity: sha512-e9EWqCY9b08MF8YSCdEDVYl2NsC1NgcYz086bv2ZI4LF3DhhfgWdFWagpjhn+l+Zd/MTLAM2NCBuBS2oWD1+RQ==}
+  '@neynar/nodejs-sdk@2.4.0':
+    resolution: {integrity: sha512-99OPGguR86oqFwrCopPxv55ZNKonp7CQAo3/YiFljV5qqvR0q1WTyB3EGEcM+BYi/OpFiPzfhRcQKed9aXdK/w==}
     engines: {node: '>=19.9.0'}
 
   '@noble/curves@1.7.0':
@@ -2676,7 +2676,7 @@ snapshots:
   '@next/swc-win32-x64-msvc@14.2.16':
     optional: true
 
-  '@neynar/nodejs-sdk@2.3.0(typescript@5.7.2)':
+  '@neynar/nodejs-sdk@2.4.0(typescript@5.7.2)':
     dependencies:
       '@openapitools/openapi-generator-cli': 2.15.3
       semver: 7.6.3
