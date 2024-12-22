@@ -1,0 +1,74 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Wallet {
+  address      String   @id
+  user         User?    @relation(fields: [fid], references: [fid])
+  fid          Int?
+  rowCreatedAt DateTime @default(now())
+}
+
+model User {
+  fid          Int           @id
+  wallets      Wallet[]
+  cast         Cast[]
+  userMetrics  UserMetrics[]
+  rowCreatedAt DateTime      @default(now())
+}
+
+model UserMetrics {
+  id           Int      @id @default(autoincrement())
+  user         User     @relation(fields: [fid], references: [fid])
+  fid          Int
+  followers    Int      @default(0)
+  following    Int      @default(0)
+  relevance    Int      @default(0)
+  rowCreatedAt DateTime @default(now())
+}
+
+model Cast {
+  hash         String        @id
+  user         User          @relation(fields: [fid], references: [fid])
+  fid          Int
+  castDate     DateTime
+  rowCreatedAt DateTime      @default(now())
+  castMetrics  CastMetrics[]
+}
+
+model CastMetrics {
+  id           Int      @id @default(autoincrement())
+  cast         Cast     @relation(fields: [hash], references: [hash])
+  hash         String
+  likes        Int
+  replies      Int
+  recasts      Int
+  rowCreatedAt DateTime @default(now())
+}
+
+model Token {
+  address      String       @id
+  name         String
+  symbol       String
+  decimals     Int
+  chainId      Int
+  logo         String
+  rowCreatedAt DateTime     @default(now())
+  tokenPrice   TokenPrice[]
+}
+
+model TokenPrice {
+  id           Int      @id @default(autoincrement())
+  token        Token    @relation(fields: [address], references: [address])
+  address      String
+  price        Decimal  @default(0.0)
+  rowCreatedAt DateTime @default(now())
+
+  @@index([address, rowCreatedAt])
+}
