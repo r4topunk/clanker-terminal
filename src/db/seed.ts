@@ -5,7 +5,9 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
-  const { user } = await neynar.lookupUserByUsername({ username: "clanker" });
+  const { user } = await neynar.lookupUserByUsername({
+    username: "willywonka.eth",
+  });
   const totalRelevancyScore = await getUserRelevancyScore(user.fid);
 
   console.log(user);
