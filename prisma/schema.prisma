@@ -17,9 +17,10 @@ model Wallet {
 
 model User {
   fid          Int           @id
+  username     String
   wallets      Wallet[]
-  cast         Cast[]
-  userMetrics  UserMetrics[]
+  casts        Cast[]
+  metrics      UserMetrics[]
   rowCreatedAt DateTime      @default(now())
 }
 
@@ -60,7 +61,7 @@ model Token {
   chainId      Int
   logo         String
   rowCreatedAt DateTime     @default(now())
-  tokenPrice   TokenPrice[]
+  tokenPrices  TokenPrice[]
 }
 
 model TokenPrice {

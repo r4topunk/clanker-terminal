@@ -1,4 +1,4 @@
-import neynar from "@/lib/neynar";
+import neynar from "../lib/neynar";
 import { Cast } from "@neynar/nodejs-sdk/build/api";
 
 function isDeployEvent(cast: Cast): boolean {
@@ -24,7 +24,7 @@ async function fetchRelevancyData(deployerFid: number) {
   });
 }
 
-async function getUserRelevancyScore(fid: number) {
+export async function getUserRelevancyScore(fid: number) {
   const deployerRelevancyData = await fetchRelevancyData(fid);
   return deployerRelevancyData.top_relevant_followers_hydrated.reduce(
     (sum, follower) => sum + (follower.user?.follower_count || 0),
