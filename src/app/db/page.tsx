@@ -11,6 +11,8 @@ import {
 } from "@/components/ui/table";
 import { formatAddress } from "@/lib/ethereum";
 
+export const revalidate = 0;
+
 export default async function DbPage() {
   const users = await prisma.user.findMany({
     include: { metrics: true, wallets: true, casts: true },
