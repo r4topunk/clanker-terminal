@@ -3,7 +3,9 @@ import { Cast } from "@neynar/nodejs-sdk/build/api";
 
 function isDeployEvent(cast: Cast): boolean {
   return (
-    cast.author.username === "clanker" && cast.text.includes("clanker.world")
+    cast.author.username === "clanker" &&
+    cast.text.includes("clanker.world") &&
+    cast.parent_hash !== null
   );
 }
 
@@ -55,7 +57,52 @@ async function getUserLastClankerMentions(fid: number) {
     .filter((item) => item !== undefined);
 }
 
-export async function processCast(cast: Cast): Promise<string> {
+export async function processCast(cast: Cast) {
+  if (!isDeployEvent(cast)) {
+    return { error: "Not a deploy event" };
+  }
+
+  const contractAddress = extractContractAddress(cast.text);
+  if (!contractAddress) {
+    return { error: "No contract address found" };
+  }
+
+  const deployerInfo = await fetchDeployerInfo(cast.parent_author.fid);
+  if (!deployerInfo) {
+    return { error: "Deployer not found" };
+  }
+
+  const deployerNeynarScore = deployerInfo.experimental?.neynar_user_score || 0;
+  const deployerFollowers = deployerInfo.follower_count;
+
+  // if (deployerNeynarScore < 0.6 || deployerFollowers < 100) {
+  //   return { error: "Deployer does not meet requirements" };
+  // }
+
+  const totalRelevancyScore = await getUserRelevancyScore(deployerInfo.fid);
+
+  const parentCast = await neynar.lookupCastByHashOrWarpcastUrl({
+    identifier: cast.parent_hash as string,
+    type: "hash",
+  });
+
+  return {
+    data: {
+      // deployerInfo,
+      fid: deployerInfo.fid,
+      username: deployerInfo.username,
+      walletAddress: deployerInfo.verified_addresses.eth_addresses[0],
+      contractAddress,
+      deployerNeynarScore,
+      deployerFollowers,
+      totalRelevancyScore,
+      parentCast,
+    },
+    error: null,
+  };
+}
+
+export async function castToDiscordMessage(cast: Cast): Promise<string> {
   if (!isDeployEvent(cast)) {
     throw new Error("Not a deploy event");
   }

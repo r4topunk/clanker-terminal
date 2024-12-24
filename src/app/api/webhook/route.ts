@@ -1,7 +1,7 @@
 import discord from "@/lib/discord";
 import { envs } from "@/lib/env";
 import { Routes } from "discord-api-types/v10";
-import { processCast } from "@/lib/clanker";
+import { castToDiscordMessage } from "@/lib/clanker";
 
 export const dynamic = "force-dynamic";
 const DISCORD_CHANNEL_ID = envs.DISCORD_CHANNEL_ID;
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const discordMessage = await processCast(webhookData.data);
+    const discordMessage = await castToDiscordMessage(webhookData.data);
     await discord.post(Routes.channelMessages(DISCORD_CHANNEL_ID), {
       body: {
         content: discordMessage,

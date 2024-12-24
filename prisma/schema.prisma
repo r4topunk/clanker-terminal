@@ -58,11 +58,11 @@ model CastMetrics {
 
 model Token {
   address      String       @id
-  name         String
-  symbol       String
-  decimals     Int
+  name         String?
+  symbol       String?
+  decimals     Int?
   chainId      Int
-  logo         String
+  logo         String?
   rowCreatedAt DateTime     @default(now())
   tokenPrices  TokenPrice[]
   casts        Cast[]
