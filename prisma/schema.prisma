@@ -22,6 +22,7 @@ model User {
   casts        Cast[]
   metrics      UserMetrics[]
   rowCreatedAt DateTime      @default(now())
+  Token        Token[]
 }
 
 model UserMetrics {
@@ -41,6 +42,8 @@ model Cast {
   castDate     DateTime
   rowCreatedAt DateTime      @default(now())
   castMetrics  CastMetrics[]
+  token        Token         @relation(fields: [tokenAddress], references: [address])
+  tokenAddress String
 }
 
 model CastMetrics {
@@ -62,6 +65,9 @@ model Token {
   logo         String
   rowCreatedAt DateTime     @default(now())
   tokenPrices  TokenPrice[]
+  casts        Cast[]
+  user         User         @relation(fields: [userFid], references: [fid])
+  userFid      Int
 }
 
 model TokenPrice {
