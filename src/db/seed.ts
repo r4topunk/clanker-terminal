@@ -12,7 +12,7 @@ async function main() {
 
   const { casts, next } = await neynar.fetchRepliesAndRecastsForUser({
     fid: clanker.fid,
-    limit: 15,
+    limit: 50,
   });
 
   console.log(`Fetched ${casts.length} casts from clanker.`);
@@ -33,11 +33,7 @@ async function main() {
       continue;
     }
 
-    console.log(data);
-    console.log(tokenData);
-    console.log(cast);
-
-    const res = await prisma.cast.create({
+    await prisma.cast.create({
       data: {
         hash: cast.hash,
         castDate: cast.timestamp,
@@ -59,19 +55,43 @@ async function main() {
               logo: tokenData.logo,
               decimals: tokenData.decimals,
               chainId: 8453, // Base mainnet chain ID
-              user: { connect: { fid: cast.parent_author.fid } },
+              user: {
+                connectOrCreate: {
+                  where: { fid: data.fid },
+                  create: {
+                    fid: data.fid,
+                    username: data.username,
+                    wallets: {
+                      connectOrCreate: {
+                        where: { address: data.walletAddress },
+                        create: { address: data.walletAddress },
+                      },
+                    },
+                  },
+                },
+              },
             },
           },
         },
       },
     });
 
-    console.log(res);
-
-    break;
+    await prisma.cast.create({
+      data: {
+        hash: cast.parent_hash as string,
+        castDate: cast.timestamp,
+        castMetrics: {
+          create: {
+            likes: cast.reactions.likes_count,
+            recasts: cast.reactions.recasts_count,
+            replies: cast.replies.count,
+          },
+        },
+        fid: cast.parent_author.fid,
+        tokenAddress: data.contractAddress,
+      },
+    });
   }
-
-  // console.log(casts);
 
   console.log("Seeding database...");
 }

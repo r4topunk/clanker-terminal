@@ -10,7 +10,7 @@ datasource db {
 
 model Wallet {
   address      String   @id
-  user         User?    @relation(fields: [fid], references: [fid])
+  user         User?    @relation(fields: [fid], references: [fid], onDelete: Cascade)
   fid          Int?
   rowCreatedAt DateTime @default(now())
 }
@@ -27,7 +27,7 @@ model User {
 
 model UserMetrics {
   id           Int      @id @default(autoincrement())
-  user         User     @relation(fields: [fid], references: [fid])
+  user         User     @relation(fields: [fid], references: [fid], onDelete: Cascade)
   fid          Int
   followers    Int      @default(0)
   following    Int      @default(0)
@@ -37,18 +37,18 @@ model UserMetrics {
 
 model Cast {
   hash         String        @id
-  user         User          @relation(fields: [fid], references: [fid])
+  user         User          @relation(fields: [fid], references: [fid], onDelete: Cascade)
   fid          Int
   castDate     DateTime
   rowCreatedAt DateTime      @default(now())
   castMetrics  CastMetrics[]
-  token        Token         @relation(fields: [tokenAddress], references: [address])
+  token        Token         @relation(fields: [tokenAddress], references: [address], onDelete: Cascade)
   tokenAddress String
 }
 
 model CastMetrics {
   id           Int      @id @default(autoincrement())
-  cast         Cast     @relation(fields: [hash], references: [hash])
+  cast         Cast     @relation(fields: [hash], references: [hash], onDelete: Cascade)
   hash         String
   likes        Int
   replies      Int
@@ -66,13 +66,13 @@ model Token {
   rowCreatedAt DateTime     @default(now())
   tokenPrices  TokenPrice[]
   casts        Cast[]
-  user         User         @relation(fields: [userFid], references: [fid])
+  user         User         @relation(fields: [userFid], references: [fid], onDelete: Cascade)
   userFid      Int
 }
 
 model TokenPrice {
   id           Int      @id @default(autoincrement())
-  token        Token    @relation(fields: [address], references: [address])
+  token        Token    @relation(fields: [address], references: [address], onDelete: Cascade)
   address      String
   price        Decimal  @default(0.0)
   rowCreatedAt DateTime @default(now())
