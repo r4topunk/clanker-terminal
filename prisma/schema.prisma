@@ -32,6 +32,7 @@ model UserMetrics {
   followers    Int      @default(0)
   following    Int      @default(0)
   relevance    Int      @default(0)
+  neynarScore  Decimal  @default(0.0)
   rowCreatedAt DateTime @default(now())
 }
 

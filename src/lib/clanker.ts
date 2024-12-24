@@ -72,8 +72,15 @@ export async function processCast(cast: Cast) {
     return { error: "Deployer not found" };
   }
 
+  const deployerWalletAddress =
+    deployerInfo.verified_addresses.eth_addresses[0];
+  if (!deployerWalletAddress) {
+    return { error: "No wallet address found" };
+  }
+
   const deployerNeynarScore = deployerInfo.experimental?.neynar_user_score || 0;
   const deployerFollowers = deployerInfo.follower_count;
+  const deployerFollowing = deployerInfo.following_count;
 
   // if (deployerNeynarScore < 0.6 || deployerFollowers < 100) {
   //   return { error: "Deployer does not meet requirements" };
@@ -81,22 +88,17 @@ export async function processCast(cast: Cast) {
 
   const totalRelevancyScore = await getUserRelevancyScore(deployerInfo.fid);
 
-  const parentCast = await neynar.lookupCastByHashOrWarpcastUrl({
-    identifier: cast.parent_hash as string,
-    type: "hash",
-  });
-
   return {
     data: {
       // deployerInfo,
       fid: deployerInfo.fid,
       username: deployerInfo.username,
-      walletAddress: deployerInfo.verified_addresses.eth_addresses[0],
+      walletAddress: deployerWalletAddress,
       contractAddress,
       deployerNeynarScore,
       deployerFollowers,
+      deployerFollowing,
       totalRelevancyScore,
-      parentCast,
     },
     error: null,
   };
