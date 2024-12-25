@@ -23,6 +23,7 @@ model User {
   metrics      UserMetrics[]
   rowCreatedAt DateTime      @default(now())
   Token        Token[]
+  parentCasts  Cast[]        @relation("ParentCast")
 }
 
 model UserMetrics {
@@ -37,23 +38,15 @@ model UserMetrics {
 }
 
 model Cast {
-  hash         String        @id
-  user         User          @relation(fields: [fid], references: [fid], onDelete: Cascade)
+  hash         String   @id
+  user         User     @relation(fields: [fid], references: [fid], onDelete: Cascade)
   fid          Int
+  parent_user  User?    @relation("ParentCast", fields: [parent_fid], references: [fid], onDelete: Cascade)
+  parent_fid   Int?
+  parent_hash  String?
   castDate     DateTime
-  rowCreatedAt DateTime      @default(now())
-  castMetrics  CastMetrics[]
-  token        Token         @relation(fields: [tokenAddress], references: [address], onDelete: Cascade)
-  tokenAddress String
-}
-
-model CastMetrics {
-  id           Int      @id @default(autoincrement())
-  cast         Cast     @relation(fields: [hash], references: [hash], onDelete: Cascade)
-  hash         String
-  likes        Int
-  replies      Int
-  recasts      Int
+  token        Token?   @relation(fields: [tokenAddress], references: [address], onDelete: Cascade)
+  tokenAddress String?
   rowCreatedAt DateTime @default(now())
 }
 
