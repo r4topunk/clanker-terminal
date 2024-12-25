@@ -1,7 +1,7 @@
 import neynar from "../lib/neynar";
 import { Cast } from "@neynar/nodejs-sdk/build/api";
 
-function isDeployEvent(cast: Cast): boolean {
+export function isDeployEvent(cast: Cast): boolean {
   return (
     cast.author.username === "clanker" &&
     cast.text.includes("clanker.world") &&
@@ -9,7 +9,7 @@ function isDeployEvent(cast: Cast): boolean {
   );
 }
 
-function extractContractAddress(castText: string): string | null {
+export function extractContractAddress(castText: string): string | null {
   const contractAddressMatch = castText.match(/0x[a-fA-F0-9]{40}/);
   return contractAddressMatch ? contractAddressMatch[0] : null;
 }

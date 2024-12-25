@@ -1,7 +1,6 @@
-import alchemy from "../lib/alchemy";
-import { processCast } from "../lib/clanker";
-import neynar from "../lib/neynar";
 import { PrismaClient } from "@prisma/client";
+import { extractContractAddress, isDeployEvent } from "../lib/clanker";
+import neynar from "../lib/neynar";
 
 const prisma = new PrismaClient();
 
@@ -22,71 +21,45 @@ async function main() {
       cursor,
     });
 
-    console.log(`Fetched ${casts.length} casts from clanker.`);
-    console.log("Next:", next);
+    console.log(
+      `[${new Date().toISOString()}] Processing ${casts.length} casts`
+    );
 
     for (const cast of casts) {
-      const dbCast = await prisma.cast.findUnique({
-        where: { hash: cast.hash },
-      });
-      if (dbCast) {
-        console.log("Cast already exists in database.");
+      if (!isDeployEvent(cast)) {
+        console.error("Cast is not a deploy event.");
+      }
+
+      const contractAddress = extractContractAddress(cast.text);
+      if (!contractAddress) {
+        console.error("No contract address found in cast.");
         continue;
       }
 
-      const { data, error } = await processCast(cast);
-      if (error || !data) {
-        console.error(`Error processing cast: ${error}`);
-        continue;
-      }
-
-      const tokenData = await alchemy.core.getTokenMetadata(
-        data.contractAddress
-      );
+      console.log(`Saving cast ${cast.hash}...`);
 
       await prisma.cast.create({
         data: {
           hash: cast.hash,
-          castDate: cast.timestamp,
-          castMetrics: {
-            create: {
-              likes: cast.reactions.likes_count,
-              recasts: cast.reactions.recasts_count,
-              replies: cast.replies.count,
+          user: { connect: { fid: clanker.fid } },
+          parent_user: {
+            connectOrCreate: {
+              where: { fid: cast.parent_author.fid },
+              create: { fid: cast.parent_author.fid },
             },
           },
-          user: { connect: { fid: clanker.fid } },
+          parent_hash: cast.parent_hash,
+          castDate: cast.timestamp,
           token: {
             connectOrCreate: {
-              where: { address: data.contractAddress },
+              where: { address: contractAddress },
               create: {
-                address: data.contractAddress,
-                name: tokenData.name,
-                symbol: tokenData.symbol,
-                logo: tokenData.logo,
-                decimals: tokenData.decimals,
-                chainId: 8453, // Base mainnet chain ID
+                address: contractAddress,
+                chainId: 8453,
                 user: {
                   connectOrCreate: {
-                    where: { fid: data.fid },
-                    create: {
-                      fid: data.fid,
-                      username: data.username,
-                      wallets: {
-                        connectOrCreate: {
-                          where: { address: data.walletAddress },
-                          create: { address: data.walletAddress },
-                        },
-                      },
-                      metrics: {
-                        create: {
-                          followers: data.deployerFollowers,
-                          relevance: data.totalRelevancyScore,
-                          following: data.deployerFollowing,
-                          neynarScore: data.deployerNeynarScore,
-                        },
-                      },
-                    },
+                    where: { fid: cast.parent_author.fid },
+                    create: { fid: cast.parent_author.fid },
                   },
                 },
               },
@@ -94,32 +67,6 @@ async function main() {
           },
         },
       });
-
-      try {
-        const parentCast = await neynar.lookupCastByHashOrWarpcastUrl({
-          identifier: cast.parent_hash as string,
-          type: "hash",
-        });
-
-        await prisma.cast.create({
-          data: {
-            hash: parentCast.cast.parent_hash as string,
-            castDate: parentCast.cast.timestamp,
-            castMetrics: {
-              create: {
-                likes: parentCast.cast.reactions.likes_count,
-                recasts: parentCast.cast.reactions.recasts_count,
-                replies: parentCast.cast.replies.count,
-              },
-            },
-            fid: parentCast.cast.author.fid,
-            tokenAddress: data.contractAddress,
-          },
-        });
-      } catch (e) {
-        console.error(`Error fetching parent cast for ${cast.hash}`);
-        continue;
-      }
     }
 
     cursor = next.cursor || undefined;
