@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 import { extractContractAddress, isDeployEvent } from "../lib/clanker";
 import neynar from "../lib/neynar";
 
@@ -14,6 +14,15 @@ async function main() {
   let cursor: string | undefined;
   let hasNext = true;
 
+  const parentUsers: Prisma.UserCreateManyInput[] = [];
+  const tokens: Prisma.TokenCreateManyInput[] = [];
+  const castsData: Prisma.CastCreateManyInput[] = [];
+
+  let nonDeployCount = 0;
+  // let noContractAddressCount = 0;
+  let processedCount = 0;
+  let totalProcessedCount = 0;
+
   while (hasNext) {
     const { casts, next } = await neynar.fetchRepliesAndRecastsForUser({
       fid: clanker.fid,
@@ -27,50 +36,69 @@ async function main() {
 
     for (const cast of casts) {
       if (!isDeployEvent(cast)) {
-        console.error("Cast is not a deploy event.");
+        nonDeployCount++;
+        continue;
       }
 
       const contractAddress = extractContractAddress(cast.text);
       if (!contractAddress) {
-        console.error("No contract address found in cast.");
+        // noContractAddressCount++;
         continue;
       }
 
-      console.log(`Saving cast ${cast.hash}...`);
+      processedCount++;
+      totalProcessedCount++;
 
-      await prisma.cast.create({
-        data: {
-          hash: cast.hash,
-          user: { connect: { fid: clanker.fid } },
-          parent_user: {
-            connectOrCreate: {
-              where: { fid: cast.parent_author.fid },
-              create: { fid: cast.parent_author.fid },
-            },
-          },
-          parent_hash: cast.parent_hash,
-          castDate: cast.timestamp,
-          token: {
-            connectOrCreate: {
-              where: { address: contractAddress },
-              create: {
-                address: contractAddress,
-                chainId: 8453,
-                user: {
-                  connectOrCreate: {
-                    where: { fid: cast.parent_author.fid },
-                    create: { fid: cast.parent_author.fid },
-                  },
-                },
-              },
-            },
-          },
-        },
+      parentUsers.push({ fid: cast.parent_author.fid });
+      tokens.push({
+        address: contractAddress,
+        chainId: 8453,
+        userFid: cast.parent_author.fid,
+      });
+      castsData.push({
+        hash: cast.hash,
+        fid: clanker.fid,
+        parent_fid: cast.parent_author.fid,
+        parent_hash: cast.parent_hash,
+        castDate: cast.timestamp,
+        tokenAddress: contractAddress,
       });
     }
 
+    // console.log(`Casts without contract address: ${noContractAddressCount}`);
+    console.log(`Non-deploy casts: ${nonDeployCount}`);
+    console.log(`Processed casts: ${processedCount}`);
+    console.log(`Total processed casts: ${totalProcessedCount}`);
+
+    nonDeployCount = 0;
+    // noContractAddressCount = 0;
+    processedCount = 0;
+
+    // Create parent users
+    await prisma.user.createMany({
+      data: parentUsers,
+      skipDuplicates: true,
+    });
+
+    // Create tokens
+    await prisma.token.createMany({
+      data: tokens,
+      skipDuplicates: true,
+    });
+
+    // Create casts
+    await prisma.cast.createMany({
+      data: castsData,
+      skipDuplicates: true,
+    });
+
     cursor = next.cursor || undefined;
     hasNext = !!next.cursor;
+
+    // Reset arrays for next batch
+    parentUsers.length = 0;
+    tokens.length = 0;
+    castsData.length = 0;
   }
 }
 
