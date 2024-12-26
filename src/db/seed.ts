@@ -34,7 +34,9 @@ const fetchInBatches = async (
   while (remaining.length !== 0) {
     const batch = remaining.splice(0, batchSize);
 
-    console.log(`Fetching batch of ${batch.length} tokens`);
+    console.log(
+      `Fetching batch of ${responses.length + batchSize}/${urls.length} tokens`
+    );
     const [batchResponses] = await Promise.all([
       Promise.all(batch.map((url) => alchemy.core.getTokenMetadata(url))),
       sleep(delayInterval),
@@ -50,7 +52,7 @@ async function seedTokens() {
   // Array to store not found tokens
   const notFoundTokens: string[] = [];
 
-  const pageSize = 50;
+  const pageSize = 30;
   let skip = 0;
   let hasMore = true;
 
@@ -70,33 +72,32 @@ async function seedTokens() {
     const tokenAddresses = tokens.map((token) => token.address);
     const tokenInfos = await fetchInBatches(tokenAddresses, 1000, 5);
 
-    const updateOperations = [];
+    await prisma.$transaction(
+      async (tx) => {
+        for (let i = 0; i < tokenAddresses.length; i++) {
+          const address = tokenAddresses[i];
+          const tokenInfo = tokenInfos[i];
 
-    for (let i = 0; i < tokenAddresses.length; i++) {
-      const address = tokenAddresses[i];
-      const tokenInfo = tokenInfos[i];
+          if (!tokenInfo) {
+            console.log(`Token ${address} not found in Alchemy`);
+            notFoundTokens.push(address);
+            continue;
+          }
 
-      if (!tokenInfo) {
-        console.log(`Token ${address} not found in Alchemy`);
-        notFoundTokens.push(address);
-        continue;
-      }
-
-      console.log(`Updating token ${address} with metadata`);
-      updateOperations.push(
-        prisma.token.update({
-          where: { address },
-          data: {
-            name: tokenInfo.name || address,
-            symbol: tokenInfo.symbol,
-            decimals: tokenInfo.decimals,
-            logo: tokenInfo.logo,
-          },
-        })
-      );
-    }
-
-    await prisma.$transaction(updateOperations);
+          await tx.token.update({
+            where: { address },
+            data: {
+              name: tokenInfo.name || address,
+              symbol: tokenInfo.symbol,
+              decimals: tokenInfo.decimals,
+              logo: tokenInfo.logo,
+            },
+          });
+          console.log(`Token ${address} updated successfully.`);
+        }
+      },
+      { timeout: 30000 }
+    );
 
     skip += notFoundTokens.length;
   }
@@ -111,5 +112,5 @@ main()
     process.exit(1);
   })
   .finally(async () => {
-    await prisma.$disconnect();
+    // await prisma.$disconnect();
   });
