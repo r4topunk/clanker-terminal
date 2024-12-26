@@ -6,7 +6,98 @@ const prisma = new PrismaClient();
 
 async function main() {
   console.log("Seeding database...");
+  await seedUsers();
+  // seedCasts();
+}
 
+async function seedUsers() {
+  let skip = 0;
+  const batchSize = 100;
+  let hasMore = true;
+
+  while (hasMore) {
+    console.log(`Fetching users from ${skip} to ${skip + batchSize}`);
+    const users = await prisma.user.findMany({
+      take: batchSize,
+      skip: skip,
+      where: { username: null },
+    });
+
+    if (users.length === 0) {
+      hasMore = false;
+      break;
+    }
+
+    const usersFids = users.map((user) => user.fid);
+    console.log(`Fetching ${usersFids.length} users from Neynar`);
+    const neynarUsers = await neynar.fetchBulkUsers({ fids: usersFids });
+
+    const usersToInsert: Prisma.UserUpdateManyMutationInput[] = [];
+    const walletsToInsert: Prisma.WalletCreateManyInput[] = [];
+    const userMetricsToInsert: Prisma.UserMetricsCreateManyInput[] = [];
+
+    for (const user of neynarUsers.users) {
+      if (user === null) {
+        continue;
+      }
+
+      usersToInsert.push({
+        fid: user.fid,
+        username: user.username,
+      });
+
+      if (
+        user.verified_addresses.eth_addresses &&
+        user.verified_addresses.eth_addresses.length > 0
+      ) {
+        walletsToInsert.push({
+          fid: user.fid,
+          address: user.verified_addresses.eth_addresses[0],
+        });
+      }
+
+      userMetricsToInsert.push({
+        fid: user.fid,
+        followers: user.follower_count,
+        following: user.following_count,
+        neynarScore: user.experimental?.neynar_user_score,
+      });
+    }
+
+    const usersToUpdate = neynarUsers.users
+      .filter((user) => user !== null)
+      .map((user) => ({
+        fid: user.fid,
+        username: user.username,
+      }));
+
+    console.log(`Updating ${usersToUpdate.length} users within a transaction`);
+    await prisma.$transaction(
+      usersToUpdate.map((user) =>
+        prisma.user.update({
+          where: { fid: user.fid },
+          data: { username: user.username },
+        })
+      )
+    );
+
+    console.log(`Inserting ${walletsToInsert.length} wallets`);
+    await prisma.wallet.createMany({
+      data: walletsToInsert,
+      skipDuplicates: true,
+    });
+
+    console.log(`Inserting ${userMetricsToInsert.length} user metrics`);
+    await prisma.userMetrics.createMany({
+      data: userMetricsToInsert,
+      skipDuplicates: true,
+    });
+
+    skip += batchSize;
+  }
+}
+
+async function seedCasts() {
   const clanker = await prisma.user.findFirstOrThrow({
     where: { username: "clanker" },
   });
@@ -22,6 +113,7 @@ async function main() {
   // let noContractAddressCount = 0;
   let processedCount = 0;
   let totalProcessedCount = 0;
+  let duplicateCount = 0;
 
   while (hasNext) {
     const { casts, next } = await neynar.fetchRepliesAndRecastsForUser({
@@ -87,13 +179,20 @@ async function main() {
     });
 
     // Create casts
-    await prisma.cast.createMany({
+    const createCastsResult = await prisma.cast.createMany({
       data: castsData,
       skipDuplicates: true,
     });
 
     cursor = next.cursor || undefined;
     hasNext = !!next.cursor;
+
+    // Calculate duplicates in this batch
+    duplicateCount += castsData.length - createCastsResult.count;
+    if (duplicateCount > 20) {
+      console.log("Duplicate limit reached. Stopping process.");
+      hasNext = false;
+    }
 
     // Reset arrays for next batch
     parentUsers.length = 0;
