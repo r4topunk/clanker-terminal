@@ -34,6 +34,7 @@ const fetchInBatches = async (
   while (remaining.length !== 0) {
     const batch = remaining.splice(0, batchSize);
 
+    console.log(`Fetching batch of ${batch.length} tokens`);
     const [batchResponses] = await Promise.all([
       Promise.all(batch.map((url) => alchemy.core.getTokenMetadata(url))),
       sleep(delayInterval),
@@ -49,7 +50,7 @@ async function seedTokens() {
   // Array to store not found tokens
   const notFoundTokens: string[] = [];
 
-  const pageSize = 15;
+  const pageSize = 50;
   let skip = 0;
   let hasMore = true;
 
