@@ -131,15 +131,16 @@ export async function seedCasts(prisma: PrismaClient) {
       data: castsData,
       skipDuplicates: true,
     });
+    console.log(`Created ${createCastsResult.count} casts`);
 
     cursor = next.cursor || undefined;
     hasNext = !!next.cursor;
 
     // Calculate duplicates in this batch
     duplicateCount += castsData.length - createCastsResult.count;
-    if (duplicateCount > 20) {
+    if (duplicateCount > 1) {
       console.log(
-        `Duplicate limit reached [${duplicateCount}/${castsData.length}]. Stopping process.`
+        `Duplicate limit reached [${duplicateCount}/${totalProcessedCount}]. Stopping process.`
       );
       hasNext = false;
     }
