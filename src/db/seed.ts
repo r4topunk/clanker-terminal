@@ -6,93 +6,6 @@ const prisma = new PrismaClient();
 
 async function main() {
   console.log("Seeding database...");
-  await seedCasts();
-  await seedUsers();
-}
-
-async function seedUsers() {
-  const batchSize = 100;
-  let hasMore = true;
-
-  while (hasMore) {
-    const users = await prisma.user.findMany({
-      take: batchSize,
-      where: { username: null },
-    });
-
-    if (users.length === 0) {
-      hasMore = false;
-      break;
-    }
-
-    const usersFids = users.map((user) => user.fid);
-    console.log(`Fetching ${usersFids.length} users from Neynar`);
-    const neynarUsers = await neynar.fetchBulkUsers({ fids: usersFids });
-
-    const usersToInsert: Prisma.UserUpdateManyMutationInput[] = [];
-    const walletsToInsert: Prisma.WalletCreateManyInput[] = [];
-    const userMetricsToInsert: Prisma.UserMetricsCreateManyInput[] = [];
-
-    for (const user of neynarUsers.users) {
-      if (user === null) {
-        continue;
-      }
-
-      usersToInsert.push({
-        fid: user.fid,
-        username: user.username,
-      });
-
-      if (
-        user.verified_addresses.eth_addresses &&
-        user.verified_addresses.eth_addresses.length > 0
-      ) {
-        walletsToInsert.push({
-          fid: user.fid,
-          address: user.verified_addresses.eth_addresses[0],
-        });
-      }
-
-      userMetricsToInsert.push({
-        fid: user.fid,
-        followers: user.follower_count,
-        following: user.following_count,
-        neynarScore: user.experimental?.neynar_user_score,
-      });
-    }
-
-    const usersToUpdate = neynarUsers.users
-      .filter((user) => user !== null)
-      .map((user) => ({
-        fid: user.fid,
-        username: user.username,
-      }));
-
-    console.log(`Updating ${usersToUpdate.length} users within a transaction`);
-    await prisma.$transaction(
-      usersToUpdate.map((user) =>
-        prisma.user.update({
-          where: { fid: user.fid },
-          data: { username: user.username },
-        })
-      )
-    );
-
-    console.log(`Inserting ${walletsToInsert.length} wallets`);
-    await prisma.wallet.createMany({
-      data: walletsToInsert,
-      skipDuplicates: true,
-    });
-
-    console.log(`Inserting ${userMetricsToInsert.length} user metrics`);
-    await prisma.userMetrics.createMany({
-      data: userMetricsToInsert,
-      skipDuplicates: true,
-    });
-  }
-}
-
-async function seedCasts() {
   const clanker = await prisma.user.findFirstOrThrow({
     where: { username: "clanker" },
   });
@@ -103,6 +16,10 @@ async function seedCasts() {
   const parentUsers: Prisma.UserCreateManyInput[] = [];
   const tokens: Prisma.TokenCreateManyInput[] = [];
   const castsData: Prisma.CastCreateManyInput[] = [];
+
+  const usersToInsert: Prisma.UserUpdateManyMutationInput[] = [];
+  const walletsToInsert: Prisma.WalletCreateManyInput[] = [];
+  const userMetricsToInsert: Prisma.UserMetricsCreateManyInput[] = [];
 
   let nonDeployCount = 0;
   // let noContractAddressCount = 0;
@@ -116,6 +33,12 @@ async function seedCasts() {
       limit: 50,
       cursor,
     });
+
+    const parentAuthorFids = casts.map((cast) => cast.parent_author.fid);
+    const neynarUsers = await neynar.fetchBulkUsers({ fids: parentAuthorFids });
+    const neynarUserMap = new Map(
+      neynarUsers.users.map((user) => [user.fid, user])
+    );
 
     console.log(
       `[${new Date().toISOString()}] Processing ${casts.length} casts`
@@ -136,7 +59,28 @@ async function seedCasts() {
       processedCount++;
       totalProcessedCount++;
 
-      parentUsers.push({ fid: cast.parent_author.fid });
+      const parentAuthor = neynarUserMap.get(cast.parent_author.fid);
+      if (parentAuthor) {
+        parentUsers.push({
+          fid: cast.parent_author.fid,
+          username: parentAuthor.username,
+        });
+        for (const address of parentAuthor.verified_addresses.eth_addresses) {
+          walletsToInsert.push({
+            fid: cast.parent_author.fid,
+            address,
+          });
+        }
+        userMetricsToInsert.push({
+          fid: cast.parent_author.fid,
+          followers: parentAuthor.follower_count,
+          following: parentAuthor.following_count,
+          neynarScore: parentAuthor.experimental?.neynar_user_score,
+        });
+      } else {
+        usersToInsert.push({ fid: cast.parent_author.fid });
+      }
+
       tokens.push({
         address: contractAddress,
         chainId: 8453,
@@ -167,6 +111,18 @@ async function seedCasts() {
       skipDuplicates: true,
     });
 
+    // Create wallets
+    await prisma.wallet.createMany({
+      data: walletsToInsert,
+      skipDuplicates: true,
+    });
+
+    // Create user metrics
+    await prisma.userMetrics.createMany({
+      data: userMetricsToInsert,
+      skipDuplicates: true,
+    });
+
     // Create tokens
     await prisma.token.createMany({
       data: tokens,
@@ -185,7 +141,9 @@ async function seedCasts() {
     // Calculate duplicates in this batch
     duplicateCount += castsData.length - createCastsResult.count;
     if (duplicateCount > 20) {
-      console.log("Duplicate limit reached. Stopping process.");
+      console.log(
+        `Duplicate limit reached [${duplicateCount}/${castsData.length}]. Stopping process.`
+      );
       hasNext = false;
     }
 
