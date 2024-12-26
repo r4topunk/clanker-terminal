@@ -6,20 +6,17 @@ const prisma = new PrismaClient();
 
 async function main() {
   console.log("Seeding database...");
+  await seedCasts();
   await seedUsers();
-  // seedCasts();
 }
 
 async function seedUsers() {
-  let skip = 0;
   const batchSize = 100;
   let hasMore = true;
 
   while (hasMore) {
-    console.log(`Fetching users from ${skip} to ${skip + batchSize}`);
     const users = await prisma.user.findMany({
       take: batchSize,
-      skip: skip,
       where: { username: null },
     });
 
@@ -92,8 +89,6 @@ async function seedUsers() {
       data: userMetricsToInsert,
       skipDuplicates: true,
     });
-
-    skip += batchSize;
   }
 }
 
