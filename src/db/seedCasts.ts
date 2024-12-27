@@ -16,7 +16,6 @@ export async function seedCasts(prisma: PrismaClient) {
 
   const usersToInsert: Prisma.UserUpdateManyMutationInput[] = [];
   const walletsToInsert: Prisma.WalletCreateManyInput[] = [];
-  const userMetricsToInsert: Prisma.UserMetricsCreateManyInput[] = [];
 
   let nonDeployCount = 0;
   // let noContractAddressCount = 0;
@@ -61,6 +60,9 @@ export async function seedCasts(prisma: PrismaClient) {
         parentUsers.push({
           fid: cast.parent_author.fid,
           username: parentAuthor.username,
+          followers: parentAuthor.follower_count,
+          following: parentAuthor.following_count,
+          neynarScore: parentAuthor.experimental?.neynar_user_score,
         });
         for (const address of parentAuthor.verified_addresses.eth_addresses) {
           walletsToInsert.push({
@@ -68,12 +70,6 @@ export async function seedCasts(prisma: PrismaClient) {
             address,
           });
         }
-        userMetricsToInsert.push({
-          fid: cast.parent_author.fid,
-          followers: parentAuthor.follower_count,
-          following: parentAuthor.following_count,
-          neynarScore: parentAuthor.experimental?.neynar_user_score,
-        });
       } else {
         usersToInsert.push({ fid: cast.parent_author.fid });
       }
@@ -111,12 +107,6 @@ export async function seedCasts(prisma: PrismaClient) {
     // Create wallets
     await prisma.wallet.createMany({
       data: walletsToInsert,
-      skipDuplicates: true,
-    });
-
-    // Create user metrics
-    await prisma.userMetrics.createMany({
-      data: userMetricsToInsert,
       skipDuplicates: true,
     });
 
