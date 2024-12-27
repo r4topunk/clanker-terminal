@@ -13,7 +13,7 @@ import prisma from "@/lib/prisma";
 import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { headers } from "next/headers";
-import Link from "next/link"; // Added import
+import Link from "next/link";
 
 export default async function DbPage({
   searchParams,
