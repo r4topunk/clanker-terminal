@@ -18,7 +18,7 @@ import { formatAddress } from "@/lib/ethereum";
 
 interface TokensTableProps {
   casts: Prisma.CastGetPayload<{
-    include: { token: true; parent_user: { include: { metrics: true } } };
+    include: { token: true; parent_user: true };
   }>[];
 }
 
@@ -32,9 +32,10 @@ const TokensTable: React.FC<TokensTableProps> = ({ casts }) => {
             <TableHead>Address</TableHead>
             <TableHead>Name</TableHead>
             <TableHead>Symbol</TableHead>
-            <TableHead>Created At</TableHead>
             <TableHead>Author</TableHead>
             <TableHead>Neynar Score</TableHead>
+            <TableHead>Followers</TableHead>
+            <TableHead>Created At</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -44,30 +45,34 @@ const TokensTable: React.FC<TokensTableProps> = ({ casts }) => {
               <TableRow key={cast.token.address}>
                 <TableCell>
                   <Link
+                    className={cn(buttonVariants({ variant: "link" }))}
                     href={`https://clanker.world/clanker/${cast.token.address}`}
+                    prefetch={false}
                   >
                     {formatAddress(cast.token.address)}
                   </Link>
                 </TableCell>
-                <TableCell className="max-w-[80px] truncate">
+                <TableCell className="max-w-[120px] truncate">
                   {cast.token.name}
                 </TableCell>
-                <TableCell>{cast.token.symbol}</TableCell>
-                <TableCell>
-                  {new Date(cast.castDate).toLocaleTimeString() +
-                    " - " +
-                    new Date(cast.castDate).toLocaleDateString()}
+                <TableCell className="max-w-[120px] truncate">
+                  {cast.token.symbol}
                 </TableCell>
                 <TableCell>
                   <Link
                     className={cn(buttonVariants({ variant: "link" }))}
                     href={`https://nounspace.com/s/${cast.parent_user?.username}`}
+                    prefetch={false}
                   >
                     {cast.parent_user?.username}
                   </Link>
                 </TableCell>
+                <TableCell>{cast.parent_user?.neynarScore || 0}</TableCell>
+                <TableCell>{cast.parent_user?.followers || 0}</TableCell>
                 <TableCell>
-                  {cast.parent_user?.metrics[0]?.neynarScore || 0}
+                  {new Date(cast.castDate).toLocaleTimeString() +
+                    " - " +
+                    new Date(cast.castDate).toLocaleDateString()}
                 </TableCell>
               </TableRow>
             );
