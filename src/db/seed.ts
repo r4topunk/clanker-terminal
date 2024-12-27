@@ -1,13 +1,13 @@
 import { PrismaClient } from "@prisma/client";
-// import { seedCasts } from "./seedCasts";
 import alchemy from "../lib/alchemy";
 import { TokenMetadataResponse } from "alchemy-sdk";
+import { seedCasts } from "./seedCasts";
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log("Seeding database...");
-  // await seedCasts(prisma);
+  await seedCasts(prisma);
   await seedTokens();
 }
 
