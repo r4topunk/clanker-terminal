@@ -27,6 +27,8 @@ model User {
   rowCreatedAt DateTime @default(now())
   Token        Token[]
   parentCasts  Cast[]   @relation("ParentCast")
+
+  @@index([neynarScore])
 }
 
 model Cast {
@@ -40,6 +42,8 @@ model Cast {
   token        Token?   @relation(fields: [tokenAddress], references: [address], onDelete: Cascade)
   tokenAddress String?
   rowCreatedAt DateTime @default(now())
+
+  @@index([castDate])
 }
 
 model Token {
