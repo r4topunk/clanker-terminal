@@ -1,5 +1,4 @@
-import prisma from "@/lib/prisma";
-import React from "react";
+import { buttonVariants } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -10,19 +9,44 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatAddress } from "@/lib/ethereum";
+import prisma from "@/lib/prisma";
+import { cn } from "@/lib/utils";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { headers } from "next/headers";
+import Link from "next/link"; // Added import
 
-export const revalidate = 0;
+export default async function DbPage({
+  searchParams,
+}: {
+  searchParams: { page?: string };
+}) {
+  headers();
 
-export default async function DbPage() {
-  const users = await prisma.user.findMany({
-    include: { metrics: true, wallets: true, casts: true },
-  });
+  const page = searchParams.page ? parseInt(searchParams.page) : 1;
+  const pageSize = 20;
+
+  const [users, total] = await Promise.all([
+    prisma.user.findMany({
+      include: { metrics: true, wallets: true, casts: true },
+      where: { wallets: { some: { address: { not: undefined } } } },
+      take: pageSize,
+      skip: (page - 1) * pageSize,
+    }),
+    prisma.user.count({
+      where: { wallets: { some: { address: { not: undefined } } } },
+    }),
+  ]);
+
+  const totalPages = Math.ceil(total / pageSize);
 
   return (
     <div className="flex gap-1 items-center justify-center min-h-screen py-2">
       <div className="overflow-x-auto">
         <Table>
-          <TableCaption>A list of users in the database.</TableCaption>
+          <TableCaption>
+            Showing {(page - 1) * pageSize + 1} to{" "}
+            {Math.min(page * pageSize, total)} of {total.toLocaleString()} users
+          </TableCaption>
           <TableHeader>
             <TableRow>
               <TableHead>FID</TableHead>
@@ -39,7 +63,9 @@ export default async function DbPage() {
               <TableRow key={user.fid}>
                 <TableCell>{user.fid}</TableCell>
                 <TableCell>{user.username}</TableCell>
-                <TableCell>{formatAddress(user.wallets[0].address)}</TableCell>
+                <TableCell>
+                  {formatAddress(user.wallets[0]?.address || "0x")}
+                </TableCell>
                 <TableCell>{user.metrics[0].followers}</TableCell>
                 <TableCell>{user.metrics[0].following}</TableCell>
                 <TableCell>{user.metrics[0].relevance}</TableCell>
@@ -48,6 +74,28 @@ export default async function DbPage() {
             ))}
           </TableBody>
         </Table>
+        <div className="flex w-full justify-between">
+          <Link
+            href={`?page=${page - 1}`}
+            className={cn(
+              buttonVariants({ variant: "outline", size: "sm" }),
+              page <= 1 && "pointer-events-none opacity-30"
+            )}
+          >
+            <ChevronLeft className="h-4 w-4 mr-2" />
+            Previous
+          </Link>
+          <Link
+            href={`?page=${page + 1}`}
+            className={cn(
+              buttonVariants({ variant: "outline", size: "sm" }),
+              page >= totalPages && "pointer-events-none opacity-30"
+            )}
+          >
+            Next
+            <ChevronRight className="h-4 w-4 ml-2" />
+          </Link>
+        </div>
       </div>
     </div>
   );
