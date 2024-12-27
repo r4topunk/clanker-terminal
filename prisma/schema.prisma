@@ -33,7 +33,7 @@ model UserMetrics {
   followers    Int      @default(0)
   following    Int      @default(0)
   relevance    Int      @default(0)
-  neynarScore  Decimal  @default(0.0)
+  neynarScore  Float    @default(0.0)
   rowCreatedAt DateTime @default(now())
 }
 
@@ -68,7 +68,7 @@ model TokenPrice {
   id           Int      @id @default(autoincrement())
   token        Token    @relation(fields: [address], references: [address], onDelete: Cascade)
   address      String
-  price        Decimal  @default(0.0)
+  price        Float    @default(0.0)
   rowCreatedAt DateTime @default(now())
 
   @@index([address, rowCreatedAt])

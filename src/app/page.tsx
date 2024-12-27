@@ -1,26 +1,20 @@
-"use client";
+import Navbar from "@/components/molecules/navbar";
+import TokensTable from "@/components/tokens/Table";
+import prisma from "@/lib/prisma";
 
-import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
-import { GithubIcon } from "lucide-react";
-import Link from "next/link";
+export default async function Home() {
+  const casts = await prisma.cast.findMany({
+    include: { token: true, parent_user: { include: { metrics: true } } },
+    orderBy: { castDate: "desc" },
+    take: 1000,
+  });
 
-export default function Home() {
-  const handleClick = async () => {
-    alert("Soon I said ୧༼ಠ益ಠ༽୨");
-  };
+  console.log({ casts });
+
   return (
-    <div className="flex gap-1 items-center justify-center min-h-screen py-2">
-      <Button onClick={handleClick}>Soon...</Button>
-      <Link
-        target="_blank"
-        href={"https://github.com/r4topunk/clanker-terminal"}
-      >
-        <Button size={"icon"} variant={"outline"}>
-          <GithubIcon />
-        </Button>
-      </Link>
-      <ThemeToggle />
+    <div className="container min-h-screen py-2 mx-auto flex flex-col">
+      <Navbar />
+      <TokensTable casts={casts} />
     </div>
   );
 }
