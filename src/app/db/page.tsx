@@ -27,7 +27,7 @@ export default async function DbPage({
 
   const [users, total] = await Promise.all([
     prisma.user.findMany({
-      include: { metrics: true, wallets: true, casts: true, parentCasts: true },
+      include: { wallets: true, casts: true, parentCasts: true },
       where: { wallets: { some: { address: { not: undefined } } } },
       take: pageSize,
       skip: (page - 1) * pageSize,
@@ -67,9 +67,9 @@ export default async function DbPage({
                 <TableCell>
                   {formatAddress(user.wallets[0]?.address || "0x")}
                 </TableCell>
-                <TableCell>{user.metrics[0].followers}</TableCell>
-                <TableCell>{user.metrics[0].following}</TableCell>
-                <TableCell>{user.metrics[0].relevance}</TableCell>
+                <TableCell>{user.followers}</TableCell>
+                <TableCell>{user.following}</TableCell>
+                <TableCell>{user.relevance}</TableCell>
                 <TableCell>{user.casts.length}</TableCell>
                 <TableCell>{user.parentCasts.length}</TableCell>
               </TableRow>
