@@ -8,15 +8,16 @@ export const revalidate = 60;
 export default async function Home({
   searchParams,
 }: {
-  searchParams: { neynarScore?: string };
+  searchParams: { neynarScore?: string; take?: string };
 }) {
   const neynarScore = parseFloat(searchParams.neynarScore || "0.95");
+  const take = parseInt(searchParams.take || "300");
 
   const casts = await prisma.cast.findMany({
     include: { token: true, parent_user: true },
     orderBy: { castDate: "desc" },
     where: { parent_user: { neynarScore: { gte: neynarScore } } },
-    take: 300,
+    take,
   });
 
   const tokenInfo = await fetchMultiTokenInfo(
