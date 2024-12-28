@@ -26,7 +26,7 @@ interface Relationships {
   };
 }
 
-interface GeckoTokenResponse {
+export interface GeckoTokenResponse {
   data: {
     id: string;
     type: string;
@@ -35,23 +35,39 @@ interface GeckoTokenResponse {
   }[];
 }
 
+// Add a helper function to split array into chunks
+function chunkArray<T>(array: T[], chunkSize: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < array.length; i += chunkSize) {
+    chunks.push(array.slice(i, i + chunkSize));
+  }
+  return chunks;
+}
+
 export async function fetchMultiTokenInfo(
   tokenAddresses: string[]
-): Promise<GeckoTokenResponse> {
+): Promise<TokenAttribute[]> {
   const baseUrl = "https://api.geckoterminal.com/api/v2";
   const network = "base";
+  const batchSize = 30;
+  const aggregatedTokens: TokenAttribute[] = [];
+
+  const batches = chunkArray(tokenAddresses, batchSize);
 
   try {
-    const response = await fetch(
-      `${baseUrl}/networks/${network}/tokens/multi/${tokenAddresses.join(",")}`,
-      {
-        headers: {
-          accept: "application/json",
-        },
-      }
-    );
-    const data: GeckoTokenResponse = await response.json();
-    return data;
+    for (const batch of batches) {
+      const response = await fetch(
+        `${baseUrl}/networks/${network}/tokens/multi/${batch.join(",")}`,
+        {
+          headers: {
+            accept: "application/json",
+          },
+        }
+      );
+      const result: GeckoTokenResponse = await response.json();
+      aggregatedTokens.push(...result.data.map((token) => token.attributes));
+    }
+    return aggregatedTokens;
   } catch (error) {
     console.error("Error fetching token info:", error);
     throw error;

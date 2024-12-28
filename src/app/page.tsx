@@ -16,13 +16,12 @@ export default async function Home({
     include: { token: true, parent_user: true },
     orderBy: { castDate: "desc" },
     where: { parent_user: { neynarScore: { gte: neynarScore } } },
-    take: 100,
+    take: 300,
   });
 
-  const geckoResponse = await fetchMultiTokenInfo(
-    casts.map((cast) => cast.token?.address || "0x0").splice(0, 30)
+  const tokenInfo = await fetchMultiTokenInfo(
+    casts.map((cast) => cast.token?.address || "0x0")
   );
-  const tokenInfo = geckoResponse.data.map((token) => token.attributes);
 
   return (
     <div className="container min-h-screen py-2 mx-auto flex flex-col">

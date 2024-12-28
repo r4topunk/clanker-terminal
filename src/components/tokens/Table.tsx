@@ -26,11 +26,10 @@ interface TokensTableProps {
 }
 
 const TokensTable: React.FC<TokensTableProps> = ({ casts, tokenInfos }) => {
-  console.log({ tokenInfos });
   return (
     <div className="w-full max-w-full overflow-x-auto font-mono">
       <Table>
-        <TableCaption>List of Tokens</TableCaption>
+        <TableCaption>List of {casts.length} Tokens</TableCaption>
         <TableHeader>
           <TableRow>
             <TableHead>Address</TableHead>
@@ -69,7 +68,7 @@ const TokensTable: React.FC<TokensTableProps> = ({ casts, tokenInfos }) => {
                 <TableCell className="max-w-[120px] truncate">
                   {cast.token.symbol}
                 </TableCell>
-                <TableCell>
+                <TableCell className="text-right">
                   {parseFloat(tokenInfo?.fdv_usd || "0").toFixed(2)}
                 </TableCell>
                 <TableCell>
