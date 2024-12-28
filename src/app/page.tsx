@@ -9,6 +9,7 @@ export default async function Home() {
     include: { token: true, parent_user: true },
     orderBy: { castDate: "desc" },
     where: { parent_user: { neynarScore: { gte: 0.95 } } },
+    take: 100,
   });
 
   return (
