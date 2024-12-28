@@ -1,5 +1,7 @@
-import neynar from "../lib/neynar";
 import { Cast } from "@neynar/nodejs-sdk/build/api";
+import neynar from "../lib/neynar";
+import alchemy from "./alchemy";
+import prisma from "./prisma";
 
 export function isDeployEvent(cast: Cast): boolean {
   return (
@@ -82,10 +84,6 @@ export async function processCast(cast: Cast) {
   const deployerFollowers = deployerInfo.follower_count;
   const deployerFollowing = deployerInfo.following_count;
 
-  // if (deployerNeynarScore < 0.6 || deployerFollowers < 100) {
-  //   return { error: "Deployer does not meet requirements" };
-  // }
-
   const totalRelevancyScore = await getUserRelevancyScore(deployerInfo.fid);
 
   return {
@@ -121,10 +119,7 @@ export async function castToDiscordMessage(cast: Cast): Promise<string> {
 
   const deployerNeynarScore = deployerInfo.experimental?.neynar_user_score || 0;
   const deployerFollowers = deployerInfo.follower_count;
-
-  if (deployerNeynarScore < 0.6 || deployerFollowers < 100) {
-    throw new Error("Deployer does not meet requirements");
-  }
+  const deployerFollowing = deployerInfo.following_count;
 
   const lastMentions = await getUserLastClankerMentions(deployerInfo.fid);
   const clankerInteractionsRelevancy = lastMentions.reduce((sum, mention) => {
@@ -136,7 +131,44 @@ export async function castToDiscordMessage(cast: Cast): Promise<string> {
 
   const totalRelevancyScore = await getUserRelevancyScore(deployerInfo.fid);
 
-  console.log(lastMentions);
+  const tokenInfo = await alchemy.core.getTokenMetadata(contractAddress);
+
+  await prisma.user.upsert({
+    where: { fid: deployerInfo.fid },
+    update: {
+      neynarScore: deployerNeynarScore,
+      followers: deployerFollowers,
+      following: deployerFollowing,
+    },
+    create: {
+      fid: deployerInfo.fid,
+      username: deployerInfo.username,
+      neynarScore: deployerNeynarScore,
+      followers: deployerFollowers,
+      following: deployerFollowing,
+    },
+  });
+
+  await prisma.token.create({
+    data: {
+      address: contractAddress,
+      name: tokenInfo.name,
+      symbol: tokenInfo.symbol,
+      chainId: 8453,
+      userFid: deployerInfo.fid,
+    },
+  });
+
+  await prisma.cast.create({
+    data: {
+      hash: cast.hash,
+      fid: deployerInfo.fid,
+      parent_hash: cast.parent_hash,
+      castDate: cast.timestamp,
+      tokenAddress: contractAddress,
+      parent_fid: cast.parent_author.fid,
+    },
+  });
 
   const discordMessage = [
     "~~                        ~~",
