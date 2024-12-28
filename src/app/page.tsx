@@ -5,11 +5,17 @@ import prisma from "@/lib/prisma";
 
 export const revalidate = 60;
 
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: { neynarScore?: number };
+}) {
+  const neynarScore = searchParams.neynarScore ?? 0.95;
+
   const casts = await prisma.cast.findMany({
     include: { token: true, parent_user: true },
     orderBy: { castDate: "desc" },
-    where: { parent_user: { neynarScore: { gte: 0.95 } } },
+    where: { parent_user: { neynarScore: { gte: neynarScore } } },
     take: 100,
   });
 
