@@ -1,6 +1,5 @@
 import { Cast } from "@neynar/nodejs-sdk/build/api";
 import neynar from "../lib/neynar";
-import alchemy from "./alchemy";
 import prisma from "./prisma";
 
 export function isDeployEvent(cast: Cast): boolean {
@@ -131,7 +130,7 @@ export async function castToDiscordMessage(cast: Cast): Promise<string> {
 
   const totalRelevancyScore = await getUserRelevancyScore(deployerInfo.fid);
 
-  const tokenInfo = await alchemy.core.getTokenMetadata(contractAddress);
+  // const tokenInfo = await alchemy.core.getTokenMetadata(contractAddress);
 
   await prisma.user.upsert({
     where: { fid: deployerInfo.fid },
@@ -152,8 +151,8 @@ export async function castToDiscordMessage(cast: Cast): Promise<string> {
   await prisma.token.create({
     data: {
       address: contractAddress,
-      name: tokenInfo.name,
-      symbol: tokenInfo.symbol,
+      // name: tokenInfo.name,
+      // symbol: tokenInfo.symbol,
       chainId: 8453,
       userFid: deployerInfo.fid,
     },
