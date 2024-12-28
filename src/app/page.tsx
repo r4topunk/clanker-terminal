@@ -8,9 +8,9 @@ export const revalidate = 60;
 export default async function Home({
   searchParams,
 }: {
-  searchParams: { neynarScore?: number };
+  searchParams: { neynarScore?: string };
 }) {
-  const neynarScore = searchParams.neynarScore ?? 0.95;
+  const neynarScore = parseFloat(searchParams.neynarScore || "0.95");
 
   const casts = await prisma.cast.findMany({
     include: { token: true, parent_user: true },
