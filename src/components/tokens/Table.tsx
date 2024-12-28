@@ -15,16 +15,20 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "../ui/button";
 import { formatAddress } from "@/lib/ethereum";
+import { TokenAttribute } from "@/lib/gecko";
+import { Address, isAddressEqual, zeroAddress } from "viem";
 
 interface TokensTableProps {
   casts: Prisma.CastGetPayload<{
     include: { token: true; parent_user: true };
   }>[];
+  tokenInfos: TokenAttribute[];
 }
 
-const TokensTable: React.FC<TokensTableProps> = ({ casts }) => {
+const TokensTable: React.FC<TokensTableProps> = ({ casts, tokenInfos }) => {
+  console.log({ tokenInfos });
   return (
-    <div className="w-full max-w-full overflow-x-auto">
+    <div className="w-full max-w-full overflow-x-auto font-mono">
       <Table>
         <TableCaption>List of Tokens</TableCaption>
         <TableHeader>
@@ -32,6 +36,7 @@ const TokensTable: React.FC<TokensTableProps> = ({ casts }) => {
             <TableHead>Address</TableHead>
             <TableHead>Name</TableHead>
             <TableHead>Symbol</TableHead>
+            <TableHead>FDV</TableHead>
             <TableHead>Author</TableHead>
             <TableHead>Neynar Score</TableHead>
             <TableHead>Followers</TableHead>
@@ -41,6 +46,12 @@ const TokensTable: React.FC<TokensTableProps> = ({ casts }) => {
         <TableBody>
           {casts.map((cast) => {
             if (!cast.token) return null;
+            const tokenInfo = tokenInfos.find((t) =>
+              isAddressEqual(
+                t.address as Address,
+                (cast.token?.address || zeroAddress) as Address
+              )
+            );
             return (
               <TableRow key={cast.token.address}>
                 <TableCell>
@@ -57,6 +68,9 @@ const TokensTable: React.FC<TokensTableProps> = ({ casts }) => {
                 </TableCell>
                 <TableCell className="max-w-[120px] truncate">
                   {cast.token.symbol}
+                </TableCell>
+                <TableCell>
+                  {parseFloat(tokenInfo?.fdv_usd || "0").toFixed(2)}
                 </TableCell>
                 <TableCell>
                   <Link
