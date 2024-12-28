@@ -64,8 +64,10 @@ export async function fetchMultiTokenInfo(
           },
         }
       );
-      const result: GeckoTokenResponse = await response.json();
-      aggregatedTokens.push(...result.data.map((token) => token.attributes));
+      if (response.ok) {
+        const result: GeckoTokenResponse = await response.json();
+        aggregatedTokens.push(...result.data.map((token) => token.attributes));
+      }
     }
     return aggregatedTokens;
   } catch (error) {
