@@ -50,13 +50,13 @@ const TokensTable: React.FC<TokensTableProps> = async ({
     <>
       <div className="w-full max-w-full overflow-x-auto font-mono animate-in fade-in duration-300 animate-out">
         <Table>
-          {/* <TableCaption>List of {casts.length} Tokens</TableCaption> */}
           <TableHeader>
             <TableRow>
               <TableHead>Address</TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Symbol</TableHead>
-              <TableHead>FDV</TableHead>
+              <TableHead>Volume (24h)</TableHead>
+              <TableHead>Market Cap</TableHead>
               <TableHead>Author</TableHead>
               <TableHead>Neynar Score</TableHead>
               <TableHead>Followers</TableHead>
@@ -90,7 +90,12 @@ const TokensTable: React.FC<TokensTableProps> = async ({
                     {cast.token.symbol}
                   </TableCell>
                   <TableCell className="text-right">
-                    {parseFloat(tokenInfo?.fdv_usd || "0").toFixed(2)}
+                    {parseFloat(tokenInfo?.volume_usd.h24 || "0").toFixed(2)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {parseFloat(
+                      tokenInfo?.market_cap_usd || tokenInfo?.fdv_usd || "0"
+                    ).toFixed(2)}
                   </TableCell>
                   <TableCell>
                     <Link
