@@ -1,8 +1,7 @@
 import { fetchMultiTokenInfo } from "@/lib/gecko";
 import neynar from "@/lib/neynar";
-import React from "react";
-import { Token, TokenCard } from "../molecules/tokenCard";
 import { Address, isAddressEqual } from "viem";
+import { Token, TokenCard } from "../molecules/tokenCard";
 
 interface ClankerToken {
   id: number;
@@ -27,30 +26,51 @@ interface ClankerResponse {
 
 async function TokensGrid() {
   const sort = "desc";
-  const page = 1;
-  const response = await fetch(
-    `https://www.clanker.world/api/tokens?sort=${sort}&page=${page}&type=all`
+  const currentPage = 1;
+  const pages = [
+    (currentPage - 1) * 3 + 1,
+    (currentPage - 1) * 3 + 2,
+    (currentPage - 1) * 3 + 3,
+  ];
+
+  const fetchPromises = pages.map((page) =>
+    fetch(
+      `https://www.clanker.world/api/tokens?sort=${sort}&page=${page}&type=all`
+    )
   );
 
-  if (!response.ok) {
+  const responses = await Promise.all(fetchPromises);
+
+  if (responses.some((response) => !response.ok)) {
     throw new Error("Failed to fetch tokens");
   }
 
-  const data: ClankerResponse = await response.json();
+  const dataList: ClankerResponse[] = await Promise.all(
+    responses.map((response) => response.json())
+  );
 
-  const tokenUsers = data.data.map((token) => {
-    return token.requestor_fid;
-  });
-  const tokenAddresses = data.data.map((token) => {
-    return token.contract_address;
-  });
+  const combinedData: ClankerResponse = {
+    data: dataList.flatMap((data) => data.data),
+    hasMore: dataList.some((data) => data.hasMore),
+    total: dataList.reduce((acc, data) => acc + data.total, 0),
+  };
+
+  const tokenUsers = combinedData.data.map((token) => token.requestor_fid);
+  const tokenAddresses = combinedData.data.map(
+    (token) => token.contract_address
+  );
 
   const userData = await neynar.fetchBulkUsers({
     fids: tokenUsers,
   });
   const tokenData = await fetchMultiTokenInfo(tokenAddresses);
 
-  const tokens: Token[] = data.data
+  console.log({
+    userData: userData.users.length,
+    tokenData: tokenData.length,
+  });
+
+  const tokens: Token[] = combinedData.data
     .map((token) => {
       const user = userData.users.find(
         (user) => user.fid === token.requestor_fid
@@ -58,8 +78,6 @@ async function TokensGrid() {
       const tokenInfo = tokenData.find((t) =>
         isAddressEqual(t.address as Address, token.contract_address as Address)
       );
-      console.log({ token, user, tokenInfo });
-      if (!tokenInfo || !user) return null;
 
       return {
         name: token.name,

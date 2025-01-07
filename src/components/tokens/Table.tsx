@@ -50,8 +50,8 @@ const TokensTable: React.FC<TokensTableProps> = async ({
 
   return (
     <>
-      <div className="w-full max-w-full overflow-x-auto font-mono animate-in fade-in duration-300 animate-out">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div className="flex flex-col gap-4 mt-4 w-full max-w-full overflow-x-auto font-mono animate-in fade-in duration-300 animate-out">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
           <TokensGrid />
 
           {/* {casts.map((cast) => {

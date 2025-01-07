@@ -31,10 +31,11 @@ export function TokenCard({ token }: TokenCardProps) {
   });
 
   return (
-    <div className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
+    <div className="flex flex-col justify-between bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
       <Link href={`/token/${token.address}`} className="block">
         <div className="relative h-48">
           <Image
+            key={token.name}
             src={token?.imageUrl || ""}
             alt={token.name}
             className="w-full h-full object-cover"
@@ -85,7 +86,7 @@ export function TokenCard({ token }: TokenCardProps) {
           </div>
           <div className="flex items-center">
             <Flame className="w-4 h-4 mr-1 text-orange-500" />
-            <span>${token.volumeLastHour.toLocaleString()}</span>
+            <span>${token.volumeLastHour.toFixed(2)}</span>
           </div>
         </div>
       </div>
