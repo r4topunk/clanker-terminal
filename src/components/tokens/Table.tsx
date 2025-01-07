@@ -15,8 +15,6 @@ import React from "react";
 import { Address, isAddressEqual, zeroAddress } from "viem";
 import { buttonVariants } from "../ui/button";
 import Pagination from "./Pagination";
-import { TokenCard } from "../molecules/tokenCard";
-import TokensGrid from "./Grid";
 
 interface TokensTableProps {
   neynarScore: number;
