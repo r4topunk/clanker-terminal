@@ -15,6 +15,8 @@ import React from "react";
 import { Address, isAddressEqual, zeroAddress } from "viem";
 import { buttonVariants } from "../ui/button";
 import Pagination from "./Pagination";
+import { TokenCard } from "../molecules/tokenCard";
+import TokensGrid from "./Grid";
 
 interface TokensTableProps {
   neynarScore: number;
@@ -49,6 +51,42 @@ const TokensTable: React.FC<TokensTableProps> = async ({
   return (
     <>
       <div className="w-full max-w-full overflow-x-auto font-mono animate-in fade-in duration-300 animate-out">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <TokensGrid />
+
+          {/* {casts.map((cast) => {
+            if (!cast.token) return null;
+            const tokenInfo = tokenInfos.find((t) =>
+              isAddressEqual(
+                t.address as Address,
+                (cast.token?.address || zeroAddress) as Address
+              )
+            );
+
+            return (
+              <TokenCard
+                key={cast.token.address}
+                token={{
+                  address: cast.token.address as Address,
+                  name: cast.token.name || "",
+                  deployedAt: cast.castDate.toISOString(),
+                  deployer: {
+                    avatarUrl: "",
+                    followers: cast.parent_user?.followers || 0,
+                    score: cast.parent_user?.neynarScore || 0,
+                    username: cast.parent_user?.username || "",
+                  },
+                  imageUrl: "",
+                  marketCap: parseFloat(
+                    tokenInfo?.market_cap_usd || tokenInfo?.fdv_usd || "0"
+                  ),
+                  symbol: cast.token.symbol || "",
+                  volumeLastHour: parseFloat(tokenInfo?.volume_usd.h24 || "0"),
+                }}
+              />
+            );
+          })} */}
+        </div>
         <Table>
           <TableHeader>
             <TableRow>
