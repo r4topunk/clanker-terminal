@@ -1,5 +1,13 @@
 import { formatDistanceToNow } from "date-fns";
-import { CircleDollarSign, Clock, Flame, User } from "lucide-react";
+import {
+  ChartNoAxesColumn,
+  ChartNoAxesColumnDecreasing,
+  ChartNoAxesColumnIncreasing,
+  CircleDollarSign,
+  Clock,
+  Flame,
+  User,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { Address } from "viem";
@@ -18,6 +26,7 @@ export interface Token {
   deployedAt: string;
   marketCap: number;
   volumeLastHour: number;
+  priceChange: number;
 }
 
 interface TokenCardProps {
@@ -58,6 +67,22 @@ export function TokenCard({ token }: TokenCardProps) {
             <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">
               {token.name}
             </h3>
+            <div className="flex items-center space-x-1">
+              {token.priceChange === 0 ? (
+                <ChartNoAxesColumn className="w-4 h-4 text-gray-900 dark:text-gray-100" />
+              ) : token.priceChange < 0 ? (
+                <ChartNoAxesColumnDecreasing className="w-4 h-4 text-red-500 dark:text-red-400" />
+              ) : (
+                <ChartNoAxesColumnIncreasing className="w-4 h-4 text-green-500 dark:text-green-400" />
+              )}
+              <span className="font-semibold text-muted-foreground">
+                $
+                {token.priceChange.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </span>
+            </div>
             {/* <div className="flex items-center space-x-1"> */}
             {/* <Trophy className="w-4 h-4 text-yellow-500 dark:text-yellow-400" />
               <span className="font-semibold text-gray-900 dark:text-gray-100">

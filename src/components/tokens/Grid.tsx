@@ -25,7 +25,7 @@ interface ClankerResponse {
 }
 
 async function TokensGrid({ page }: { page: number }) {
-  const sort = "desc";
+  const sort = "asc";
   const currentPage = page;
   const pages = [
     (currentPage - 1) * 3 + 1,
@@ -67,11 +67,6 @@ async function TokensGrid({ page }: { page: number }) {
   });
   const tokenData = await fetchMultiTokenInfo(tokenAddresses);
 
-  console.log({
-    userData: userData.users.length,
-    tokenData: tokenData.length,
-  });
-
   const tokens: Token[] = combinedData.data
     .map((token) => {
       const user = userData.users.find(
@@ -97,6 +92,7 @@ async function TokensGrid({ page }: { page: number }) {
           tokenInfo?.market_cap_usd || tokenInfo?.fdv_usd || "0"
         ),
         volumeLastHour: parseFloat(tokenInfo?.volume_usd.h24 || "0"),
+        priceChange: parseFloat(tokenInfo?.top_pool?.volume_usd.h24 || "0"),
       };
     })
     .filter((token) => token !== null);
