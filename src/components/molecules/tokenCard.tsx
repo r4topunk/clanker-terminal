@@ -49,7 +49,7 @@ export function TokenCard({ token }: TokenCardProps) {
         <div className="relative h-48">
           <Image
             key={token.name}
-            src={token?.imageUrl || ""}
+            src={token?.imageUrl || token.deployer?.avatarUrl || ""}
             alt={token.name}
             className="w-full h-full object-cover"
             width={500}
@@ -69,18 +69,18 @@ export function TokenCard({ token }: TokenCardProps) {
             </h3>
             <div className="flex items-center space-x-1">
               {token.priceChange === 0 ? (
-                <ChartNoAxesColumn className="w-4 h-4 text-gray-900 dark:text-gray-100" />
+                <ChartNoAxesColumn className="w-5 h-5 text-gray-900 dark:text-gray-100" />
               ) : token.priceChange < 0 ? (
-                <ChartNoAxesColumnDecreasing className="w-4 h-4 text-red-500 dark:text-red-400" />
+                <ChartNoAxesColumnDecreasing className="w-5 h-5 text-red-500 dark:text-red-400" />
               ) : (
-                <ChartNoAxesColumnIncreasing className="w-4 h-4 text-green-500 dark:text-green-400" />
+                <ChartNoAxesColumnIncreasing className="w-5 h-5 text-green-500 dark:text-green-400" />
               )}
               <span className="font-semibold text-muted-foreground">
-                $
                 {token.priceChange.toLocaleString(undefined, {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 })}
+                %
               </span>
             </div>
             {/* <div className="flex items-center space-x-1"> */}
@@ -97,9 +97,9 @@ export function TokenCard({ token }: TokenCardProps) {
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center hover:opacity-80 cursor-pointer">
             <Image
-              src={token.deployer.avatarUrl}
+              src={token.deployer?.avatarUrl || ""}
               alt={token.deployer.username}
-              className="w-8 h-8 rounded-full mr-2"
+              className="w-8 h-8 rounded-full mr-2 object-cover bg-gray-400"
               width={32}
               height={32}
             />
@@ -114,7 +114,7 @@ export function TokenCard({ token }: TokenCardProps) {
           </div>
           <div className="flex items-center space-x-1">
             <User className="w-4 h-4 text-muted-foreground" />
-            <span className="font-semibold text-muted-foreground">
+            <span className="text-muted-foreground">
               {token.deployer.score}
             </span>
           </div>

@@ -25,17 +25,27 @@ interface ClankerResponse {
 }
 
 async function TokensGrid({ page }: { page: number }) {
-  const sort = "asc";
+  const sort = "desc";
   const currentPage = page;
   const pages = [
     (currentPage - 1) * 3 + 1,
     (currentPage - 1) * 3 + 2,
     (currentPage - 1) * 3 + 3,
+    (currentPage - 1) * 3 + 4,
+    (currentPage - 1) * 3 + 5,
+    (currentPage - 1) * 3 + 6,
+    (currentPage - 1) * 3 + 7,
+    (currentPage - 1) * 3 + 8,
+    (currentPage - 1) * 3 + 9,
+    (currentPage - 1) * 3 + 10,
   ];
 
   const fetchPromises = pages.map((page) =>
     fetch(
-      `https://www.clanker.world/api/tokens?sort=${sort}&page=${page}&type=all`
+      `https://www.clanker.world/api/tokens?sort=${sort}&page=${page}&type=all`,
+      {
+        cache: "no-cache",
+      }
     )
   );
 
@@ -92,7 +102,9 @@ async function TokensGrid({ page }: { page: number }) {
           tokenInfo?.market_cap_usd || tokenInfo?.fdv_usd || "0"
         ),
         volumeLastHour: parseFloat(tokenInfo?.volume_usd.h24 || "0"),
-        priceChange: parseFloat(tokenInfo?.top_pool?.volume_usd.h24 || "0"),
+        priceChange: parseFloat(
+          tokenInfo?.top_pool?.price_change_percentage.h24 || "0"
+        ),
       };
     })
     .filter((token) => token !== null);
