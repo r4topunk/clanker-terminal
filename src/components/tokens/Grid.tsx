@@ -1,117 +1,24 @@
-import { fetchMultiTokenInfo } from "@/lib/gecko";
-import neynar from "@/lib/neynar";
-import { Address, isAddressEqual } from "viem";
+"use client";
+
+import { useEffect, useState } from "react";
 import { Token, TokenCard } from "../molecules/tokenCard";
 
-interface ClankerToken {
-  id: number;
-  created_at: string;
-  tx_hash: string;
-  contract_address: string;
-  requestor_fid: number | null;
-  name: string;
-  symbol: string;
-  img_url: string;
-  pool_address: string;
-  cast_hash: string | null;
-  type: "clanker_v2" | null;
-  pair: string | null;
-}
+function TokensGrid({ page }: { page: number }) {
+  const [tokens, setTokens] = useState<Token[]>([]);
 
-interface ClankerResponse {
-  data: ClankerToken[];
-  hasMore: boolean;
-  total: number;
-}
+  useEffect(() => {
+    const fetchTokens = async () => {
+      console.log("fetching tokens");
+      const res = await fetch(`/api/tokens?page=${page}`);
+      const data = await res.json();
+      setTokens(data);
+    };
+    fetchTokens();
+    const interval = setInterval(fetchTokens, 30000);
+    return () => clearInterval(interval);
+  }, [page]);
 
-async function TokensGrid({ page }: { page: number }) {
-  const sort = "desc";
-  const currentPage = page;
-  const pages = [
-    (currentPage - 1) * 3 + 1,
-    (currentPage - 1) * 3 + 2,
-    (currentPage - 1) * 3 + 3,
-    (currentPage - 1) * 3 + 4,
-    (currentPage - 1) * 3 + 5,
-    (currentPage - 1) * 3 + 6,
-    (currentPage - 1) * 3 + 7,
-    (currentPage - 1) * 3 + 8,
-    (currentPage - 1) * 3 + 9,
-    (currentPage - 1) * 3 + 10,
-  ];
-
-  const fetchPromises = pages.map((page) =>
-    fetch(
-      `https://www.clanker.world/api/tokens?sort=${sort}&page=${page}&type=all`,
-      {
-        cache: "no-cache",
-      }
-    )
-  );
-
-  const responses = await Promise.all(fetchPromises);
-
-  if (responses.some((response) => !response.ok)) {
-    throw new Error("Failed to fetch tokens");
-  }
-
-  const dataList: ClankerResponse[] = await Promise.all(
-    responses.map((response) => response.json())
-  );
-
-  const combinedData: ClankerResponse = {
-    data: dataList.flatMap((data) => data.data),
-    hasMore: dataList.some((data) => data.hasMore),
-    total: dataList.reduce((acc, data) => acc + data.total, 0),
-  };
-
-  const tokenUsers = combinedData.data
-    .map((token) => token.requestor_fid)
-    .filter((fid) => fid !== 0 && fid !== null);
-  const tokenAddresses = combinedData.data.map(
-    (token) => token.contract_address
-  );
-
-  const userData = await neynar.fetchBulkUsers({
-    fids: tokenUsers as number[],
-  });
-  const tokenData = await fetchMultiTokenInfo(tokenAddresses);
-
-  const tokens: Token[] = combinedData.data
-    .map((token) => {
-      const user = userData.users.find(
-        (user) => user.fid === token.requestor_fid
-      );
-      const tokenInfo = tokenData.find((t) =>
-        isAddressEqual(t.address as Address, token.contract_address as Address)
-      );
-
-      return {
-        name: token.name,
-        address: token.contract_address as Address,
-        symbol: token.symbol,
-        imageUrl: token.img_url,
-        deployer: {
-          username: user?.username || "Unknown",
-          avatarUrl: user?.pfp_url || "",
-          followers: user?.follower_count || 0,
-          score: user?.experimental?.neynar_user_score || 0,
-        },
-        deployedAt: token.created_at,
-        marketCap: parseFloat(
-          tokenInfo?.market_cap_usd || tokenInfo?.fdv_usd || "0"
-        ),
-        volumeLastHour: parseFloat(tokenInfo?.volume_usd.h24 || "0"),
-        priceChange: parseFloat(
-          tokenInfo?.top_pool?.price_change_percentage.h24 || "0"
-        ),
-      };
-    })
-    .filter((token) => token !== null);
-
-  return tokens.map((token) => {
-    return <TokenCard key={token.address} token={token} />;
-  });
+  return tokens.map((token) => <TokenCard key={token.address} token={token} />);
 }
 
 export default TokensGrid;
