@@ -26,6 +26,17 @@ interface ClankerResponse {
 export const revalidate = 30;
 const PAGE_AGGREGATION = 10;
 
+export async function OPTIONS() {
+  return new Response(null, {
+    status: 204,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET,HEAD,OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
+    },
+  });
+}
+
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const page = parseInt(searchParams.get("page") || "1");
@@ -107,5 +118,10 @@ export async function GET(req: Request) {
     })
     .filter((token) => token !== null);
 
-  return Response.json(tokens);
+  return new Response(JSON.stringify(tokens), {
+    headers: {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*",
+    },
+  });
 }
