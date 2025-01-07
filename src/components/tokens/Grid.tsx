@@ -8,7 +8,7 @@ interface ClankerToken {
   created_at: string;
   tx_hash: string;
   contract_address: string;
-  requestor_fid: number;
+  requestor_fid: number | null;
   name: string;
   symbol: string;
   img_url: string;
@@ -24,9 +24,9 @@ interface ClankerResponse {
   total: number;
 }
 
-async function TokensGrid() {
-  const sort = "asc";
-  const currentPage = 1;
+async function TokensGrid({ page }: { page: number }) {
+  const sort = "desc";
+  const currentPage = page;
   const pages = [
     (currentPage - 1) * 3 + 1,
     (currentPage - 1) * 3 + 2,
@@ -55,13 +55,15 @@ async function TokensGrid() {
     total: dataList.reduce((acc, data) => acc + data.total, 0),
   };
 
-  const tokenUsers = combinedData.data.map((token) => token.requestor_fid);
+  const tokenUsers = combinedData.data
+    .map((token) => token.requestor_fid)
+    .filter((fid) => fid !== 0 && fid !== null);
   const tokenAddresses = combinedData.data.map(
     (token) => token.contract_address
   );
 
   const userData = await neynar.fetchBulkUsers({
-    fids: tokenUsers,
+    fids: tokenUsers as number[],
   });
   const tokenData = await fetchMultiTokenInfo(tokenAddresses);
 
