@@ -25,7 +25,7 @@ interface ClankerResponse {
 }
 
 async function TokensGrid() {
-  const sort = "desc";
+  const sort = "asc";
   const currentPage = 1;
   const pages = [
     (currentPage - 1) * 3 + 1,
