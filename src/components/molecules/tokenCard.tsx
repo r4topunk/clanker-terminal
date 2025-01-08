@@ -57,7 +57,6 @@ export function TokenCard({ token }: TokenCardProps) {
               height={500}
             />
           ) : (
-            // Grey background if no image
             <div className="w-full h-full bg-gray-200 dark:bg-gray-700">
               <div className="flex justify-center items-center w-full h-full">
                 <span className="text-xs text-muted-foreground">
@@ -66,7 +65,7 @@ export function TokenCard({ token }: TokenCardProps) {
               </div>
             </div>
           )}
-          <div className="absolute top-4 right-4 bg-black/70 dark:bg-gray-700 px-3 py-1 rounded-full">
+          <div className="absolute top-4 right-4 bg-black/70 dark:bg-gray-600/80 px-3 py-1 rounded-full">
             <span className="text-white dark:text-gray-200 font-medium">
               {token.symbol}
             </span>
