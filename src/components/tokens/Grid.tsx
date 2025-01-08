@@ -3,8 +3,14 @@
 import { useEffect, useState } from "react";
 import { Token, TokenCard } from "../molecules/tokenCard";
 
-function TokensGrid({ page }: { page: number }) {
-  const [tokens, setTokens] = useState<Token[]>([]);
+function TokensGrid({
+  page,
+  defaultTokens = [],
+}: {
+  page: number;
+  defaultTokens?: Token[];
+}) {
+  const [tokens, setTokens] = useState<Token[]>(defaultTokens);
 
   useEffect(() => {
     const fetchTokens = async () => {
@@ -13,7 +19,6 @@ function TokensGrid({ page }: { page: number }) {
       const data = await res.json();
       setTokens(data);
     };
-    fetchTokens();
     const interval = setInterval(fetchTokens, 30000);
     return () => clearInterval(interval);
   }, [page]);

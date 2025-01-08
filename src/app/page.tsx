@@ -1,16 +1,17 @@
 import Navbar from "@/components/molecules/navbar";
 import TokensGrid from "@/components/tokens/Grid";
-import TokensTable from "@/components/tokens/Table";
+import { getClankerTokens } from "@/lib/clanker";
 import { Suspense } from "react";
 
-export const revalidate = 1;
+export const revalidate = 60;
 
-export default function Home({
+export default async function Home({
   searchParams,
 }: {
-  searchParams: { neynarScore?: string; take?: string; page?: string };
+  searchParams: { page?: string };
 }) {
   const page = parseInt(searchParams.page || "1");
+  const tokens = await getClankerTokens(page);
 
   return (
     <div className="container min-h-screen py-2 mx-auto flex flex-col gap-2">
@@ -23,7 +24,7 @@ export default function Home({
           </div>
         }
       >
-        <TokensGrid page={page} />
+        <TokensGrid page={page} defaultTokens={tokens} />
       </Suspense>
     </div>
   );
