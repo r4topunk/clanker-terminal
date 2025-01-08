@@ -1,4 +1,4 @@
-import { fetchMultiTokenInfo } from "@/lib/gecko";
+import { fetchMultiTokenInfo } from "./gecko";
 import { Cast } from "@neynar/nodejs-sdk/build/api";
 import { Address, isAddressEqual } from "viem";
 import neynar from "../lib/neynar";
