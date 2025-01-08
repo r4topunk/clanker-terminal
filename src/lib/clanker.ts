@@ -189,7 +189,7 @@ export async function castToDiscordMessage(cast: Cast): Promise<string> {
 }
 
 type Order = "asc" | "desc";
-const PAGE_AGGREGATION = 10;
+const PAGE_AGGREGATION = 8;
 
 interface ClankerToken {
   id: number;
