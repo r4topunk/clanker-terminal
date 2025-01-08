@@ -6,6 +6,12 @@ import { ThemeToggle } from "../ui/theme-toggle";
 function Navbar() {
   return (
     <div className="flex w-full gap-1 items-center justify-center">
+      <Link className={buttonVariants({ variant: "outline" })} href={"/"}>
+        Home
+      </Link>
+      <Link className={buttonVariants({ variant: "outline" })} href={"/table"}>
+        Table
+      </Link>
       <Link
         className={buttonVariants({ size: "icon", variant: "outline" })}
         target="_blank"
