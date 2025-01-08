@@ -7,11 +7,17 @@ export const revalidate = 60;
 export default function TablePage({
   searchParams,
 }: {
-  searchParams: { neynarScore?: string; take?: string; page?: string };
+  searchParams: {
+    neynarScore?: string;
+    take?: string;
+    page?: string;
+    user?: string;
+  };
 }) {
   const neynarScore = parseFloat(searchParams.neynarScore || "0.95");
   const take = parseInt(searchParams.take || "300");
   const page = parseInt(searchParams.page || "1");
+  const user = searchParams.user;
 
   return (
     <div className="container min-h-screen py-2 mx-auto flex flex-col gap-2">
@@ -24,7 +30,12 @@ export default function TablePage({
           </div>
         }
       >
-        <TokensTable neynarScore={neynarScore} page={page} take={take} />
+        <TokensTable
+          neynarScore={neynarScore}
+          page={page}
+          take={take}
+          user={user}
+        />
       </Suspense>
     </div>
   );

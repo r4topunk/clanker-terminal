@@ -20,25 +20,31 @@ interface TokensTableProps {
   neynarScore: number;
   page: number;
   take: number;
+  user?: string;
 }
 
 const TokensTable: React.FC<TokensTableProps> = async ({
   neynarScore,
   page,
   take,
+  user,
 }) => {
   const skip = (page - 1) * take;
 
   const casts = await prisma.cast.findMany({
     include: { token: true, parent_user: true },
     orderBy: { castDate: "desc" },
-    where: { parent_user: { neynarScore: { gte: neynarScore } } },
+    where: {
+      parent_user: { neynarScore: { gte: neynarScore }, username: user },
+    },
     skip,
     take,
   });
 
   const totalCasts = await prisma.cast.count({
-    where: { parent_user: { neynarScore: { gte: neynarScore } } },
+    where: {
+      parent_user: { neynarScore: { gte: neynarScore }, username: user },
+    },
   });
 
   const tokenInfos = await fetchMultiTokenInfo(
@@ -100,7 +106,7 @@ const TokensTable: React.FC<TokensTableProps> = async ({
                   <TableCell>
                     <Link
                       className={cn(buttonVariants({ variant: "link" }))}
-                      href={`https://nounspace.com/s/${cast.parent_user?.username}`}
+                      href={`/table?user=${cast.parent_user?.username}`}
                       prefetch={false}
                     >
                       {cast.parent_user?.username}
