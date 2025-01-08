@@ -18,7 +18,13 @@ function TokensGrid({ page }: { page: number }) {
     return () => clearInterval(interval);
   }, [page]);
 
-  return tokens.map((token) => <TokenCard key={token.address} token={token} />);
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-6">
+      {tokens.map((token) => (
+        <TokenCard key={token.address} token={token} />
+      ))}
+    </div>
+  );
 }
 
 export default TokensGrid;
