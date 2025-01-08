@@ -17,7 +17,7 @@ export interface Token {
   address: Address;
   symbol: string;
   imageUrl?: string;
-  deployer: {
+  deployer?: {
     username: string;
     avatarUrl: string;
     followers: number;
@@ -47,14 +47,25 @@ export function TokenCard({ token }: TokenCardProps) {
         prefetch={false}
       >
         <div className="relative h-48">
-          <Image
-            key={token.name}
-            src={token?.imageUrl || token.deployer?.avatarUrl || ""}
-            alt={token.name}
-            className="w-full h-full object-cover"
-            width={500}
-            height={500}
-          />
+          {token.imageUrl ? (
+            <Image
+              key={token.name}
+              src={token.imageUrl}
+              alt={token.name}
+              className="w-full h-full object-cover"
+              width={500}
+              height={500}
+            />
+          ) : (
+            // Grey background if no image
+            <div className="w-full h-full bg-gray-200 dark:bg-gray-700">
+              <div className="flex justify-center items-center w-full h-full">
+                <span className="text-xs text-muted-foreground">
+                  Token without image
+                </span>
+              </div>
+            </div>
+          )}
           <div className="absolute top-4 right-4 bg-black/70 dark:bg-gray-700 px-3 py-1 rounded-full">
             <span className="text-white dark:text-gray-200 font-medium">
               {token.symbol}
@@ -94,31 +105,33 @@ export function TokenCard({ token }: TokenCardProps) {
       </Link>
 
       <div className="px-6 pb-6">
-        <div className="flex justify-between items-center mb-4">
-          <div className="flex items-center hover:opacity-80 cursor-pointer">
-            <Image
-              src={token.deployer?.avatarUrl || ""}
-              alt={token.deployer.username}
-              className="w-8 h-8 rounded-full mr-2 object-cover bg-gray-400"
-              width={32}
-              height={32}
-            />
-            <div>
-              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                @{token.deployer.username}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {token.deployer.followers.toLocaleString()} followers
-              </p>
+        {token.deployer && token.deployer.username !== "Unknown" ? (
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex items-center hover:opacity-80 cursor-pointer">
+              <Image
+                src={token.deployer?.avatarUrl || ""}
+                alt={token.deployer.username}
+                className="w-8 h-8 rounded-full mr-2 object-cover bg-gray-400"
+                width={32}
+                height={32}
+              />
+              <div>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  @{token.deployer.username}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {token.deployer.followers.toLocaleString()} followers
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-1">
+              <User className="w-4 h-4 text-muted-foreground" />
+              <span className="text-muted-foreground">
+                {token.deployer.score}
+              </span>
             </div>
           </div>
-          <div className="flex items-center space-x-1">
-            <User className="w-4 h-4 text-muted-foreground" />
-            <span className="text-muted-foreground">
-              {token.deployer.score}
-            </span>
-          </div>
-        </div>
+        ) : null}
 
         <div className="flex items-end justify-between text-sm text-muted-foreground">
           <div className="flex items-center">
