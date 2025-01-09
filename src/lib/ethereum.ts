@@ -1,9 +1,5 @@
-/**
- * Formats an Ethereum address by showing the first and last n characters
- * @param address The Ethereum address to format
- * @param chars The number of characters to show at start and end (default: 4)
- * @returns The formatted address
- */
+import { Address, isAddress, isAddressEqual as isAddressEqualViem } from "viem";
+
 export function formatAddress(address?: string, chars: number = 4): string {
   if (!address) return "";
   if (address.length < chars * 2) return address;
@@ -12,4 +8,9 @@ export function formatAddress(address?: string, chars: number = 4): string {
   const end = address.slice(-chars);
 
   return `${start}...${end}`;
+}
+
+export function isAddressEqualTo(a?: string | null, b?: string | null) {
+  if (!a || !b || !isAddress(a) || !isAddress(b)) return false;
+  return isAddressEqualViem(a as Address, b as Address);
 }

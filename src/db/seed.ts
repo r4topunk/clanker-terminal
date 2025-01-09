@@ -1,10 +1,9 @@
 import { PrismaClient } from "@prisma/client";
-import alchemy from "../lib/alchemy";
 import { TokenMetadataResponse } from "alchemy-sdk";
-import { seedCasts } from "./seedCasts";
-import { fetchClankerTokens } from "../scripts/sync_clanker_db";
-import { equal } from "node:assert";
 import { base } from "viem/chains";
+import alchemy from "../lib/alchemy";
+import { isAddressEqualTo } from "../lib/ethereum";
+import { fetchClankerTokens } from "../scripts/sync_clanker_db";
 
 const prisma = new PrismaClient();
 
@@ -51,8 +50,12 @@ const fetchInBatches = async (
   return responses;
 };
 
+const CREATED_COLOR = "\x1b[32m"; // Green
+const UPDATED_COLOR = "\x1b[34m"; // Blue
+const RESET_COLOR = "\x1b[0m";
+
 async function seedTokens() {
-  const PAGE_AGGREGATION = 10;
+  const PAGE_AGGREGATION = 1;
   let page = 1;
   let hasMore = true;
 
@@ -61,11 +64,20 @@ async function seedTokens() {
     const pages = Array.from({ length: PAGE_AGGREGATION }, (_, i) => page + i);
 
     const fetchPromises = pages.map((pageNum) =>
-      fetchClankerTokens(pageNum, "desc")
+      fetchClankerTokens(pageNum, "asc")
     );
     const responses = await Promise.all(fetchPromises);
 
     const tokens = responses.flatMap((response) => response.data);
+    const dbTokens = await prisma.token.findMany({
+      where: {
+        address: {
+          // equals: token.contract_address,
+          in: tokens.map((token) => token.contract_address),
+          mode: "insensitive",
+        },
+      },
+    });
 
     hasMore = responses.some((response) => response.hasMore);
     page += PAGE_AGGREGATION;
@@ -74,17 +86,11 @@ async function seedTokens() {
       async (tx) => {
         for (let i = 0; i < tokens.length; i++) {
           const token = tokens[i];
+          const dbToken = dbTokens.find((dbToken) =>
+            isAddressEqualTo(dbToken.address, token.contract_address)
+          );
 
-          const dbTokens = await tx.token.findMany({
-            where: {
-              address: {
-                equals: token.contract_address,
-                mode: "insensitive",
-              },
-            },
-          });
-
-          if (!dbTokens.length) {
+          if (!dbToken) {
             const dataToInsert = {
               address: token.contract_address,
               name: token.name,
@@ -99,44 +105,46 @@ async function seedTokens() {
             };
 
             if (token.requestor_fid) {
-              // await tx.token.create({
-              //   data: {
-              //     ...dataToInsert,
-              //     user: {
-              //       connectOrCreate: {
-              //         where: { fid: token.requestor_fid || undefined },
-              //         create: { fid: token.requestor_fid },
-              //       },
-              //     },
-              //   },
-              // });
+              await tx.token.create({
+                data: {
+                  ...dataToInsert,
+                  user: {
+                    connectOrCreate: {
+                      where: { fid: token.requestor_fid || undefined },
+                      create: { fid: token.requestor_fid },
+                    },
+                  },
+                },
+              });
             } else {
-              // await tx.token.create({
-              //   data: dataToInsert,
-              // });
+              await tx.token.create({
+                data: dataToInsert,
+              });
             }
 
             console.log(
-              `Token ${token.contract_address} created successfully.`
+              `${CREATED_COLOR}Token ${token.contract_address} created successfully.${RESET_COLOR}`
             );
             continue;
           }
 
-          // await tx.token.update({
-          //   where: { address: dbTokens[0].address },
-          //   data: {
-          //     name: token.name,
-          //     symbol: token.symbol,
-          //     logo: token.img_url,
-          //     createdAt: new Date(token.created_at),
-          //     txHash: token.tx_hash,
-          //     poolAddress: token.pool_address,
-          //     type: token.type,
-          //     pair: token.pair,
-          //   },
-          // });
+          await tx.token.update({
+            where: { address: dbTokens[0].address },
+            data: {
+              name: token.name,
+              symbol: token.symbol,
+              logo: token.img_url,
+              createdAt: new Date(token.created_at),
+              txHash: token.tx_hash,
+              poolAddress: token.pool_address,
+              type: token.type,
+              pair: token.pair,
+            },
+          });
 
-          console.log(`Token ${token.contract_address} updated successfully.`);
+          console.log(
+            `${UPDATED_COLOR}Token ${token.contract_address} updated successfully.${RESET_COLOR}`
+          );
         }
       },
       { timeout: 30000 }
