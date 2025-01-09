@@ -82,73 +82,84 @@ async function seedTokens() {
     hasMore = responses.some((response) => response.hasMore);
     page += PAGE_AGGREGATION;
 
-    await prisma.$transaction(
-      async (tx) => {
-        for (let i = 0; i < tokens.length; i++) {
-          const token = tokens[i];
-          const dbToken = dbTokens.find((dbToken) =>
-            isAddressEqualTo(dbToken.address, token.contract_address)
-          );
+    let success = false;
+    while (!success) {
+      try {
+        await prisma.$transaction(
+          async (tx) => {
+            for (let i = 0; i < tokens.length; i++) {
+              const token = tokens[i];
+              const dbToken = dbTokens.find((dbToken) =>
+                isAddressEqualTo(dbToken.address, token.contract_address)
+              );
 
-          if (!dbToken) {
-            const dataToInsert = {
-              address: token.contract_address,
-              name: token.name,
-              symbol: token.symbol,
-              logo: token.img_url,
-              createdAt: new Date(token.created_at),
-              txHash: token.tx_hash,
-              poolAddress: token.pool_address,
-              type: token.type,
-              pair: token.pair,
-              chainId: base.id,
-            };
+              if (!dbToken) {
+                const dataToInsert = {
+                  address: token.contract_address,
+                  name: token.name,
+                  symbol: token.symbol,
+                  logo: token.img_url,
+                  createdAt: new Date(token.created_at),
+                  txHash: token.tx_hash,
+                  poolAddress: token.pool_address,
+                  type: token.type,
+                  pair: token.pair,
+                  chainId: base.id,
+                };
 
-            if (token.requestor_fid) {
-              await tx.token.create({
-                data: {
-                  ...dataToInsert,
-                  user: {
-                    connectOrCreate: {
-                      where: { fid: token.requestor_fid || undefined },
-                      create: { fid: token.requestor_fid },
+                if (token.requestor_fid) {
+                  await tx.token.create({
+                    data: {
+                      ...dataToInsert,
+                      user: {
+                        connectOrCreate: {
+                          where: { fid: token.requestor_fid || undefined },
+                          create: { fid: token.requestor_fid },
+                        },
+                      },
                     },
-                  },
+                  });
+                } else {
+                  await tx.token.create({
+                    data: dataToInsert,
+                  });
+                }
+
+                console.log(
+                  `${CREATED_COLOR}Token ${token.contract_address} created successfully.${RESET_COLOR}`
+                );
+                continue;
+              }
+
+              await tx.token.update({
+                where: { address: dbTokens[0].address },
+                data: {
+                  name: token.name,
+                  symbol: token.symbol,
+                  logo: token.img_url,
+                  createdAt: new Date(token.created_at),
+                  txHash: token.tx_hash,
+                  poolAddress: token.pool_address,
+                  type: token.type,
+                  pair: token.pair,
                 },
               });
-            } else {
-              await tx.token.create({
-                data: dataToInsert,
-              });
+
+              console.log(
+                `${UPDATED_COLOR}Token ${token.contract_address} updated successfully.${RESET_COLOR}`
+              );
             }
-
-            console.log(
-              `${CREATED_COLOR}Token ${token.contract_address} created successfully.${RESET_COLOR}`
-            );
-            continue;
-          }
-
-          await tx.token.update({
-            where: { address: dbTokens[0].address },
-            data: {
-              name: token.name,
-              symbol: token.symbol,
-              logo: token.img_url,
-              createdAt: new Date(token.created_at),
-              txHash: token.tx_hash,
-              poolAddress: token.pool_address,
-              type: token.type,
-              pair: token.pair,
-            },
-          });
-
-          console.log(
-            `${UPDATED_COLOR}Token ${token.contract_address} updated successfully.${RESET_COLOR}`
-          );
-        }
-      },
-      { timeout: 30000 }
-    );
+          },
+          { timeout: 30000 }
+        );
+        success = true;
+      } catch (error) {
+        console.error(
+          `Transaction failed for page ${page}. Retrying...`,
+          error
+        );
+      }
+    }
   }
 }
 
