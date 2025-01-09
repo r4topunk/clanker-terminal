@@ -55,8 +55,8 @@ const UPDATED_COLOR = "\x1b[34m"; // Blue
 const RESET_COLOR = "\x1b[0m";
 
 async function seedTokens() {
-  const PAGE_AGGREGATION = 1;
-  let page = 1;
+  const PAGE_AGGREGATION = 3;
+  let page = 597;
   let hasMore = true;
 
   while (hasMore) {
@@ -72,94 +72,87 @@ async function seedTokens() {
     const dbTokens = await prisma.token.findMany({
       where: {
         address: {
-          // equals: token.contract_address,
           in: tokens.map((token) => token.contract_address),
           mode: "insensitive",
         },
       },
     });
 
-    hasMore = responses.some((response) => response.hasMore);
-    page += PAGE_AGGREGATION;
+    const existingAddresses = dbTokens.map((token) =>
+      token.address.toLowerCase()
+    );
+    const newTokens = tokens.filter(
+      (token) =>
+        !existingAddresses.includes(token.contract_address.toLowerCase())
+    );
+    const tokensToUpdate = tokens.filter((token) =>
+      existingAddresses.includes(token.contract_address.toLowerCase())
+    );
 
-    let success = false;
-    while (!success) {
-      try {
-        await prisma.$transaction(
-          async (tx) => {
-            for (let i = 0; i < tokens.length; i++) {
-              const token = tokens[i];
-              const dbToken = dbTokens.find((dbToken) =>
-                isAddressEqualTo(dbToken.address, token.contract_address)
-              );
+    // Create new tokens using createMany
+    if (newTokens.length > 0) {
+      await prisma.token.createMany({
+        data: newTokens.map((token) => ({
+          address: token.contract_address,
+          name: token.name,
+          symbol: token.symbol,
+          logo: token.img_url,
+          createdAt: new Date(token.created_at),
+          txHash: token.tx_hash,
+          poolAddress: token.pool_address,
+          type: token.type,
+          pair: token.pair,
+          chainId: base.id,
+        })),
+        skipDuplicates: true,
+      });
 
-              if (!dbToken) {
-                const dataToInsert = {
-                  address: token.contract_address,
-                  name: token.name,
-                  symbol: token.symbol,
-                  logo: token.img_url,
-                  createdAt: new Date(token.created_at),
-                  txHash: token.tx_hash,
-                  poolAddress: token.pool_address,
-                  type: token.type,
-                  pair: token.pair,
-                  chainId: base.id,
-                };
+      console.log(
+        `${CREATED_COLOR}Created ${newTokens.length} new tokens.${RESET_COLOR}`
+      );
+    }
 
-                if (token.requestor_fid) {
-                  await tx.token.create({
-                    data: {
-                      ...dataToInsert,
-                      user: {
-                        connectOrCreate: {
-                          where: { fid: token.requestor_fid || undefined },
-                          create: { fid: token.requestor_fid },
-                        },
-                      },
-                    },
-                  });
-                } else {
-                  await tx.token.create({
-                    data: dataToInsert,
-                  });
-                }
+    // Update existing tokens within a transaction
+    if (tokensToUpdate.length > 0) {
+      let success = false;
+      while (!success) {
+        try {
+          await prisma.$transaction(
+            async (tx) => {
+              for (const token of tokensToUpdate) {
+                await tx.token.update({
+                  where: { address: token.contract_address },
+                  data: {
+                    name: token.name,
+                    symbol: token.symbol,
+                    logo: token.img_url,
+                    createdAt: new Date(token.created_at),
+                    txHash: token.tx_hash,
+                    poolAddress: token.pool_address,
+                    type: token.type,
+                    pair: token.pair,
+                  },
+                });
 
                 console.log(
-                  `${CREATED_COLOR}Token ${token.contract_address} created successfully.${RESET_COLOR}`
+                  `${UPDATED_COLOR}Token ${token.contract_address} updated successfully.${RESET_COLOR}`
                 );
-                continue;
               }
-
-              await tx.token.update({
-                where: { address: dbTokens[0].address },
-                data: {
-                  name: token.name,
-                  symbol: token.symbol,
-                  logo: token.img_url,
-                  createdAt: new Date(token.created_at),
-                  txHash: token.tx_hash,
-                  poolAddress: token.pool_address,
-                  type: token.type,
-                  pair: token.pair,
-                },
-              });
-
-              console.log(
-                `${UPDATED_COLOR}Token ${token.contract_address} updated successfully.${RESET_COLOR}`
-              );
-            }
-          },
-          { timeout: 30000 }
-        );
-        success = true;
-      } catch (error) {
-        console.error(
-          `Transaction failed for page ${page}. Retrying...`,
-          error
-        );
+            },
+            { timeout: 30000 }
+          );
+          success = true;
+        } catch (error) {
+          console.error(
+            `Transaction failed for updating tokens on page ${page}. Retrying...`,
+            error
+          );
+        }
       }
     }
+
+    hasMore = responses.some((response) => response.hasMore);
+    page += PAGE_AGGREGATION;
   }
 }
 
