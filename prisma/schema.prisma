@@ -56,8 +56,13 @@ model Token {
   rowCreatedAt DateTime     @default(now())
   tokenPrices  TokenPrice[]
   casts        Cast[]
-  user         User         @relation(fields: [userFid], references: [fid], onDelete: Cascade)
-  userFid      Int
+  user         User?        @relation(fields: [userFid], references: [fid], onDelete: Cascade)
+  userFid      Int?
+  createdAt    DateTime?
+  txHash       String?
+  poolAddress  String?
+  type         String?
+  pair         String?
 }
 
 model TokenPrice {

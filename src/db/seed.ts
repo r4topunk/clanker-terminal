@@ -2,12 +2,15 @@ import { PrismaClient } from "@prisma/client";
 import alchemy from "../lib/alchemy";
 import { TokenMetadataResponse } from "alchemy-sdk";
 import { seedCasts } from "./seedCasts";
+import { fetchClankerTokens } from "../scripts/sync_clanker_db";
+import { equal } from "node:assert";
+import { base } from "viem/chains";
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log("Seeding database...");
-  await seedCasts(prisma);
+  // await seedCasts(prisma);
   await seedTokens();
 }
 
@@ -49,60 +52,96 @@ const fetchInBatches = async (
 };
 
 async function seedTokens() {
-  // Array to store not found tokens
-  const notFoundTokens: string[] = [];
-
-  const pageSize = 30;
-  let skip = 0;
+  const PAGE_AGGREGATION = 10;
+  let page = 1;
   let hasMore = true;
 
   while (hasMore) {
-    const tokens = await prisma.token.findMany({
-      where: { name: null },
-      orderBy: { rowCreatedAt: "asc" },
-      skip,
-      take: pageSize,
-    });
+    console.log(`Fetching page ${page}...`);
+    const pages = Array.from({ length: PAGE_AGGREGATION }, (_, i) => page + i);
 
-    if (tokens.length === 0) {
-      hasMore = false;
-      break;
-    }
+    const fetchPromises = pages.map((pageNum) =>
+      fetchClankerTokens(pageNum, "desc")
+    );
+    const responses = await Promise.all(fetchPromises);
 
-    const tokenAddresses = tokens.map((token) => token.address);
-    const tokenInfos = await fetchInBatches(tokenAddresses, 1000, 5);
+    const tokens = responses.flatMap((response) => response.data);
+
+    hasMore = responses.some((response) => response.hasMore);
+    page += PAGE_AGGREGATION;
 
     await prisma.$transaction(
       async (tx) => {
-        for (let i = 0; i < tokenAddresses.length; i++) {
-          const address = tokenAddresses[i];
-          const tokenInfo = tokenInfos[i];
+        for (let i = 0; i < tokens.length; i++) {
+          const token = tokens[i];
 
-          if (!tokenInfo) {
-            console.log(`Token ${address} not found in Alchemy`);
-            notFoundTokens.push(address);
+          const dbTokens = await tx.token.findMany({
+            where: {
+              address: {
+                equals: token.contract_address,
+                mode: "insensitive",
+              },
+            },
+          });
+
+          if (!dbTokens.length) {
+            const dataToInsert = {
+              address: token.contract_address,
+              name: token.name,
+              symbol: token.symbol,
+              logo: token.img_url,
+              createdAt: new Date(token.created_at),
+              txHash: token.tx_hash,
+              poolAddress: token.pool_address,
+              type: token.type,
+              pair: token.pair,
+              chainId: base.id,
+            };
+
+            if (token.requestor_fid) {
+              // await tx.token.create({
+              //   data: {
+              //     ...dataToInsert,
+              //     user: {
+              //       connectOrCreate: {
+              //         where: { fid: token.requestor_fid || undefined },
+              //         create: { fid: token.requestor_fid },
+              //       },
+              //     },
+              //   },
+              // });
+            } else {
+              // await tx.token.create({
+              //   data: dataToInsert,
+              // });
+            }
+
+            console.log(
+              `Token ${token.contract_address} created successfully.`
+            );
             continue;
           }
 
-          await tx.token.update({
-            where: { address },
-            data: {
-              name: tokenInfo.name || address,
-              symbol: tokenInfo.symbol,
-              decimals: tokenInfo.decimals,
-              logo: tokenInfo.logo,
-            },
-          });
-          console.log(`Token ${address} updated successfully.`);
+          // await tx.token.update({
+          //   where: { address: dbTokens[0].address },
+          //   data: {
+          //     name: token.name,
+          //     symbol: token.symbol,
+          //     logo: token.img_url,
+          //     createdAt: new Date(token.created_at),
+          //     txHash: token.tx_hash,
+          //     poolAddress: token.pool_address,
+          //     type: token.type,
+          //     pair: token.pair,
+          //   },
+          // });
+
+          console.log(`Token ${token.contract_address} updated successfully.`);
         }
       },
       { timeout: 30000 }
     );
-
-    skip += notFoundTokens.length;
   }
-
-  // Optionally handle notFoundTokens (e.g., log or store them)
 }
 
 main()
