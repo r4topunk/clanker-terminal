@@ -14,7 +14,7 @@ export default function TablePage({
     user?: string;
   };
 }) {
-  const neynarScore = parseFloat(searchParams.neynarScore || "0.95");
+  const neynarScore = parseFloat(searchParams.neynarScore || "0");
   const take = parseInt(searchParams.take || "300");
   const page = parseInt(searchParams.page || "1");
   const user = searchParams.user;

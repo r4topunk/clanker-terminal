@@ -31,26 +31,27 @@ const TokensTable: React.FC<TokensTableProps> = async ({
 }) => {
   const skip = (page - 1) * take;
 
-  const casts = await prisma.cast.findMany({
-    include: { token: true, parent_user: true },
-    orderBy: { castDate: "desc" },
+  const tokens = await prisma.token.findMany({
+    include: {
+      user: true,
+      tokenPrices: {
+        take: 1,
+        orderBy: { rowCreatedAt: "asc" },
+      },
+    },
+    orderBy: { createdAt: "asc" },
     where: {
-      parent_user: { neynarScore: { gte: neynarScore }, username: user },
+      user: { neynarScore: { gte: neynarScore }, username: user },
     },
     skip,
-    take,
   });
 
-  const totalCasts = await prisma.cast.count({
+  const totalTokens = await prisma.token.count({
     where: {
-      parent_user: { neynarScore: { gte: neynarScore }, username: user },
+      user: { neynarScore: { gte: neynarScore }, username: user },
     },
   });
-
-  const tokenInfos = await fetchMultiTokenInfo(
-    casts.map((cast) => cast.token?.address || "0x0")
-  );
-  const totalPages = Math.ceil(totalCasts / take);
+  const totalPages = Math.ceil(totalTokens / take);
 
   return (
     <>
@@ -70,54 +71,48 @@ const TokensTable: React.FC<TokensTableProps> = async ({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {casts.map((cast) => {
-              if (!cast.token) return null;
-              const tokenInfo = tokenInfos.find((t) =>
-                isAddressEqual(
-                  t.address as Address,
-                  (cast.token?.address || zeroAddress) as Address
-                )
-              );
+            {tokens.map((token) => {
+              const lastPrice = token.tokenPrices[0];
               return (
-                <TableRow key={cast.token.address}>
+                <TableRow key={token.address}>
                   <TableCell>
                     <Link
                       className={cn(buttonVariants({ variant: "link" }))}
-                      href={`https://clanker.world/clanker/${cast.token.address}`}
+                      href={`https://clanker.world/clanker/${token.address}`}
                       prefetch={false}
                     >
-                      {formatAddress(cast.token.address)}
+                      {formatAddress(token.address)}
                     </Link>
                   </TableCell>
                   <TableCell className="max-w-[120px] truncate">
-                    {cast.token.name}
+                    {token.name}
                   </TableCell>
                   <TableCell className="max-w-[120px] truncate">
-                    {cast.token.symbol}
+                    {token.symbol}
                   </TableCell>
                   <TableCell className="text-right">
-                    {parseFloat(tokenInfo?.volume_usd.h24 || "0").toFixed(2)}
+                    {lastPrice?.volumeUsdH24.toFixed(2) || "0"}
                   </TableCell>
                   <TableCell className="text-right">
-                    {parseFloat(
-                      tokenInfo?.market_cap_usd || tokenInfo?.fdv_usd || "0"
-                    ).toFixed(2)}
+                    {lastPrice?.marketCapUsd.toFixed(2) ||
+                      lastPrice?.fdvUsd.toFixed(2) ||
+                      "0"}
                   </TableCell>
                   <TableCell>
                     <Link
                       className={cn(buttonVariants({ variant: "link" }))}
-                      href={`/table?user=${cast.parent_user?.username}`}
+                      href={`/table?user=${token.user?.username}`}
                       prefetch={false}
                     >
-                      {cast.parent_user?.username}
+                      {token.user?.username}
                     </Link>
                   </TableCell>
-                  <TableCell>{cast.parent_user?.neynarScore || 0}</TableCell>
-                  <TableCell>{cast.parent_user?.followers || 0}</TableCell>
+                  <TableCell>{token.user?.neynarScore || 0}</TableCell>
+                  <TableCell>{token.user?.followers || 0}</TableCell>
                   <TableCell>
-                    {new Date(cast.castDate).toLocaleTimeString() +
+                    {new Date(token.createdAt || 0).toLocaleTimeString() +
                       " - " +
-                      new Date(cast.castDate).toLocaleDateString()}
+                      new Date(token.createdAt || 0).toLocaleDateString()}
                   </TableCell>
                 </TableRow>
               );
