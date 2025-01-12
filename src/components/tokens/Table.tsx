@@ -39,9 +39,16 @@ const TokensTable: React.FC<TokensTableProps> = async ({
         orderBy: { rowCreatedAt: "asc" },
       },
     },
-    orderBy: { createdAt: "asc" },
+    orderBy: { createdAt: "desc" },
     where: {
       user: { neynarScore: { gte: neynarScore }, username: user },
+      tokenPrices: {
+        some: {
+          fdvUsd: {
+            gt: 0,
+          },
+        },
+      },
     },
     skip,
   });
@@ -73,6 +80,10 @@ const TokensTable: React.FC<TokensTableProps> = async ({
           <TableBody>
             {tokens.map((token) => {
               const lastPrice = token.tokenPrices[0];
+              const tokenMcap =
+                lastPrice?.marketCapUsd === 0
+                  ? lastPrice?.fdvUsd
+                  : lastPrice?.marketCapUsd;
               return (
                 <TableRow key={token.address}>
                   <TableCell>
@@ -94,9 +105,7 @@ const TokensTable: React.FC<TokensTableProps> = async ({
                     {lastPrice?.volumeUsdH24.toFixed(2) || "0"}
                   </TableCell>
                   <TableCell className="text-right">
-                    {lastPrice?.marketCapUsd.toFixed(2) ||
-                      lastPrice?.fdvUsd.toFixed(2) ||
-                      "0"}
+                    {tokenMcap.toFixed(2) || "0"}
                   </TableCell>
                   <TableCell>
                     <Link
