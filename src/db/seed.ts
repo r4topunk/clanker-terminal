@@ -1,158 +1,146 @@
 import { PrismaClient } from "@prisma/client";
-import { TokenMetadataResponse } from "alchemy-sdk";
 import { base } from "viem/chains";
-import alchemy from "../lib/alchemy";
 import { isAddressEqualTo } from "../lib/ethereum";
+import { fetchMultiTokenInfo } from "../lib/gecko";
+import neynar from "../lib/neynar";
 import { fetchClankerTokens } from "../scripts/sync_clanker_db";
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log("Seeding database...");
+  await prisma.token.deleteMany({});
+  await prisma.user.deleteMany({});
+
   // await seedCasts(prisma);
   await seedTokens();
 }
 
-// Add utility functions for batch processing
-const sleep = (ms: number) =>
-  new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
-
-/**
- * @param {string[]} urls
- * @param {number} delayInterval
- * @param {number} batchSize
- */
-const fetchInBatches = async (
-  urls: string[],
-  delayInterval: number,
-  batchSize: number
-) => {
-  const remaining = [...urls];
-
-  const responses: TokenMetadataResponse[] = [];
-
-  while (remaining.length !== 0) {
-    const batch = remaining.splice(0, batchSize);
-
-    console.log(
-      `Fetching batch of ${responses.length + batchSize}/${urls.length} tokens`
-    );
-    const [batchResponses] = await Promise.all([
-      Promise.all(batch.map((url) => alchemy.core.getTokenMetadata(url))),
-      sleep(delayInterval),
-    ]);
-
-    responses.push(...batchResponses);
-  }
-
-  return responses;
-};
-
 const CREATED_COLOR = "\x1b[32m"; // Green
-const UPDATED_COLOR = "\x1b[34m"; // Blue
 const RESET_COLOR = "\x1b[0m";
 
 async function seedTokens() {
-  const PAGE_AGGREGATION = 3;
-  let page = 597;
+  const PAGE_AGGREGATION = 10;
+  let page = 1;
   let hasMore = true;
+  let sort: "asc" | "desc" = "asc";
 
   while (hasMore) {
-    console.log(`Fetching page ${page}...`);
+    console.log(`[${new Date().toLocaleString()}] Fetching page ${page}...`);
     const pages = Array.from({ length: PAGE_AGGREGATION }, (_, i) => page + i);
 
     const fetchPromises = pages.map((pageNum) =>
-      fetchClankerTokens(pageNum, "asc")
+      fetchClankerTokens(pageNum, sort)
     );
     const responses = await Promise.all(fetchPromises);
 
     const tokens = responses.flatMap((response) => response.data);
-    const dbTokens = await prisma.token.findMany({
-      where: {
-        address: {
-          in: tokens.map((token) => token.contract_address),
-          mode: "insensitive",
-        },
-      },
-    });
+    if (tokens.length === 0) {
+      throw new Error(`No tokens found on page ${page}`);
+    }
 
-    const existingAddresses = dbTokens.map((token) =>
-      token.address.toLowerCase()
-    );
-    const newTokens = tokens.filter(
-      (token) =>
-        !existingAddresses.includes(token.contract_address.toLowerCase())
-    );
-    const tokensToUpdate = tokens.filter((token) =>
-      existingAddresses.includes(token.contract_address.toLowerCase())
-    );
+    const tokenAddresses = tokens.map((token) => token.contract_address);
 
-    // Create new tokens using createMany
-    if (newTokens.length > 0) {
-      await prisma.token.createMany({
-        data: newTokens.map((token) => ({
-          address: token.contract_address,
-          name: token.name,
-          symbol: token.symbol,
-          logo: token.img_url,
-          createdAt: new Date(token.created_at),
-          txHash: token.tx_hash,
-          poolAddress: token.pool_address,
-          type: token.type,
-          pair: token.pair,
-          chainId: base.id,
+    const [tokensInfo, userData] = await Promise.all([
+      fetchMultiTokenInfo(tokenAddresses),
+      neynar.fetchBulkUsers({
+        fids: tokens
+          .map((token) => token.requestor_fid)
+          .filter((fid) => fid !== 0 && fid !== null) as number[],
+      }),
+    ]);
+
+    if (userData.users.length) {
+      await prisma.user.createMany({
+        data: userData.users.map((user) => ({
+          fid: user.fid,
+          username: user.username,
+          pfpUrl: user.pfp_url,
+          followers: user.follower_count,
+          following: user.following_count,
+          neynarScore: user.experimental?.neynar_user_score,
         })),
         skipDuplicates: true,
       });
-
       console.log(
-        `${CREATED_COLOR}Created ${newTokens.length} new tokens.${RESET_COLOR}`
+        `${CREATED_COLOR}Created ${userData.users.length} users${RESET_COLOR}`
+      );
+
+      const userWallets = [];
+      for (const user of userData.users) {
+        for (const wallet of user.verified_addresses.eth_addresses) {
+          userWallets.push({
+            fid: user.fid,
+            address: wallet,
+          });
+        }
+      }
+
+      await prisma.wallet.createMany({
+        data: userWallets,
+        skipDuplicates: true,
+      });
+      console.log(
+        `${CREATED_COLOR}Created ${userWallets.length} wallets${RESET_COLOR}`
       );
     }
 
-    // Update existing tokens within a transaction
-    if (tokensToUpdate.length > 0) {
-      let success = false;
-      while (!success) {
-        try {
-          await prisma.$transaction(
-            async (tx) => {
-              for (const token of tokensToUpdate) {
-                await tx.token.update({
-                  where: { address: token.contract_address },
-                  data: {
-                    name: token.name,
-                    symbol: token.symbol,
-                    logo: token.img_url,
-                    createdAt: new Date(token.created_at),
-                    txHash: token.tx_hash,
-                    poolAddress: token.pool_address,
-                    type: token.type,
-                    pair: token.pair,
-                  },
-                });
+    console.log(tokens);
 
-                console.log(
-                  `${UPDATED_COLOR}Token ${token.contract_address} updated successfully.${RESET_COLOR}`
-                );
-              }
-            },
-            { timeout: 30000 }
-          );
-          success = true;
-        } catch (error) {
-          console.error(
-            `Transaction failed for updating tokens on page ${page}. Retrying...`,
-            error
-          );
-        }
-      }
-    }
+    await prisma.token.createMany({
+      data: tokens.map((token) => ({
+        address: token.contract_address,
+        name: token.name,
+        symbol: token.symbol,
+        logo: token.img_url,
+        txHash: token.tx_hash,
+        poolAddress: token.pool_address,
+        type: token.type,
+        pair: token.pair,
+        chainId: base.id,
+        userFid: token.requestor_fid,
+        createdAt: token.created_at,
+      })),
+      skipDuplicates: true,
+    });
+    console.log(
+      `${CREATED_COLOR}Created ${tokens.length} tokens${RESET_COLOR}`
+    );
+
+    await prisma.tokenPrice.createMany({
+      data: tokens.map((token) => {
+        const tokenInfo = tokensInfo.find((info) =>
+          isAddressEqualTo(info.address, token.contract_address)
+        );
+
+        return {
+          address: token.contract_address,
+          totalSupply: tokenInfo?.total_supply || undefined,
+          fdvUsd: tokenInfo?.fdv_usd
+            ? parseFloat(tokenInfo.fdv_usd)
+            : undefined,
+          priceUsd: tokenInfo?.price_usd
+            ? parseFloat(tokenInfo.price_usd)
+            : undefined,
+          volumeUsdH24: tokenInfo?.volume_usd.h24
+            ? parseFloat(tokenInfo.volume_usd.h24)
+            : undefined,
+          marketCapUsd: tokenInfo?.market_cap_usd
+            ? parseFloat(tokenInfo.market_cap_usd)
+            : undefined,
+          totalReserveInUsd: tokenInfo?.total_reserve_in_usd
+            ? parseFloat(tokenInfo.total_reserve_in_usd)
+            : undefined,
+        };
+      }),
+    });
+    console.log(
+      `${CREATED_COLOR}Created ${tokens.length} token prices${RESET_COLOR}`
+    );
 
     hasMore = responses.some((response) => response.hasMore);
     page += PAGE_AGGREGATION;
+    break;
   }
 }
 
@@ -163,5 +151,5 @@ main()
     process.exit(1);
   })
   .finally(async () => {
-    // await prisma.$disconnect();
+    await prisma.$disconnect();
   });

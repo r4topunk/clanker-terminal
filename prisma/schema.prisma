@@ -18,6 +18,7 @@ model Wallet {
 model User {
   fid          Int      @id
   username     String?
+  pfpUrl       String?
   wallets      Wallet[]
   casts        Cast[]
   followers    Int      @default(0)
@@ -69,8 +70,14 @@ model TokenPrice {
   id           Int      @id @default(autoincrement())
   token        Token    @relation(fields: [address], references: [address], onDelete: Cascade)
   address      String
-  price        Float    @default(0.0)
   rowCreatedAt DateTime @default(now())
 
-  @@index([address, rowCreatedAt])
+  totalSupply       String @default("0")
+  fdvUsd            Float  @default(0.0)
+  priceUsd          Float  @default(0.0)
+  volumeUsdH24      Float  @default(0.0)
+  marketCapUsd      Float  @default(0.0)
+  totalReserveInUsd Float  @default(0.0)
+
+  @@index([address, rowCreatedAt, fdvUsd])
 }
