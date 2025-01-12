@@ -122,14 +122,6 @@ export async function castToDiscordMessage(cast: Cast): Promise<string> {
   const deployerFollowers = deployerInfo.follower_count;
   const deployerFollowing = deployerInfo.following_count;
 
-  const lastMentions = await getUserLastClankerMentions(deployerInfo.fid);
-  const clankerInteractionsRelevancy = lastMentions.reduce((sum, mention) => {
-    if (mention) {
-      return sum + mention.likes + mention.recasts + mention.replies;
-    }
-    return sum;
-  }, 0);
-
   const totalRelevancyScore = await getUserRelevancyScore(deployerInfo.fid);
 
   // const tokenInfo = await alchemy.core.getTokenMetadata(contractAddress);
@@ -178,9 +170,6 @@ export async function castToDiscordMessage(cast: Cast): Promise<string> {
     `- followers: ${deployerFollowers}`,
     `- relevancy: ${totalRelevancyScore}`,
     `- neynar score: ${deployerNeynarScore}`,
-    `**clanker interactions**`,
-    `- relevancy: ${clankerInteractionsRelevancy}`,
-    `- quantity: ${lastMentions.length}`,
     `[clankerworld](<https://clanker.world/clanker/${contractAddress}>) - [warpcast](<https://warpcast.com/${cast.author.username}/${cast.hash}>)`,
     `\`\`\`${cast.text.split("\n")[0]}\`\`\``,
   ].join("\n");
