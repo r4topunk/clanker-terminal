@@ -9,8 +9,8 @@ const prisma = new PrismaClient();
 
 async function main() {
   console.log("Seeding database...");
-  await prisma.token.deleteMany({});
-  await prisma.user.deleteMany({});
+  // await prisma.token.deleteMany({});
+  // await prisma.user.deleteMany({});
 
   // await seedCasts(prisma);
   await seedTokens();
@@ -20,8 +20,8 @@ const CREATED_COLOR = "\x1b[32m"; // Green
 const RESET_COLOR = "\x1b[0m";
 
 async function seedTokens() {
-  const PAGE_AGGREGATION = 10;
-  let page = 1;
+  const PAGE_AGGREGATION = 1;
+  let page = 3742;
   let hasMore = true;
   let sort: "asc" | "desc" = "asc";
 
