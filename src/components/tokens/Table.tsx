@@ -49,6 +49,7 @@ const TokensTable: React.FC<TokensTableProps> = async ({
       },
     },
     skip,
+    take,
   });
 
   const totalTokens = await prisma.token.count({
@@ -64,7 +65,6 @@ const TokensTable: React.FC<TokensTableProps> = async ({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Address</TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Symbol</TableHead>
               <TableHead>Volume (24h)</TableHead>
@@ -84,17 +84,14 @@ const TokensTable: React.FC<TokensTableProps> = async ({
                   : lastPrice?.marketCapUsd;
               return (
                 <TableRow key={token.address}>
-                  <TableCell>
+                  <TableCell className="max-w-[120px] truncate">
                     <Link
                       className={cn(buttonVariants({ variant: "link" }))}
                       href={`https://clanker.world/clanker/${token.address}`}
                       prefetch={false}
                     >
-                      {formatAddress(token.address)}
+                      {token.name}
                     </Link>
-                  </TableCell>
-                  <TableCell className="max-w-[120px] truncate">
-                    {token.name}
                   </TableCell>
                   <TableCell className="max-w-[120px] truncate">
                     {token.symbol}
