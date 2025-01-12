@@ -102,10 +102,10 @@ const TokensTable: React.FC<TokensTableProps> = async ({
                     {token.symbol}
                   </TableCell>
                   <TableCell className="text-right">
-                    {lastPrice?.volumeUsdH24.toFixed(2) || "0"}
+                    {lastPrice?.volumeUsdH24.toLocaleString() || "0"}
                   </TableCell>
                   <TableCell className="text-right">
-                    {tokenMcap.toFixed(2) || "0"}
+                    {tokenMcap.toLocaleString() || "0"}
                   </TableCell>
                   <TableCell>
                     <Link
