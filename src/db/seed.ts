@@ -140,7 +140,6 @@ async function seedTokens() {
 
     hasMore = responses.some((response) => response.hasMore);
     page += PAGE_AGGREGATION;
-    break;
   }
 }
 
