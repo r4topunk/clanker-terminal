@@ -6,7 +6,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatAddress } from "@/lib/ethereum";
 import prisma from "@/lib/prisma";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
