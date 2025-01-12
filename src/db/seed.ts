@@ -85,8 +85,6 @@ async function seedTokens() {
       );
     }
 
-    console.log(tokens);
-
     await prisma.token.createMany({
       data: tokens.map((token) => ({
         address: token.contract_address,
