@@ -37,7 +37,7 @@ export async function getUserRelevancyScore(fid: number) {
   );
 }
 
-async function getUserLastClankerMentions(fid: number) {
+export async function getUserLastClankerMentions(fid: number) {
   const { casts } = await neynar.fetchCastsForUser({ fid, limit: 150 });
   if (!casts.length) {
     return [];

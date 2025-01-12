@@ -1,5 +1,3 @@
-import fs from "fs";
-
 interface ClankerToken {
   id: number;
   created_at: string;
@@ -41,8 +39,6 @@ export async function fetchClankerTokens(
     throw error;
   }
 }
-
-const PAGE_AGGREGATION = 10;
 
 // async function main() {
 //   let page = 1;

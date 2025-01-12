@@ -21,9 +21,9 @@ const RESET_COLOR = "\x1b[0m";
 
 async function seedTokens() {
   const PAGE_AGGREGATION = 1;
+  const sort: "asc" | "desc" = "asc";
   let page = 3742;
   let hasMore = true;
-  let sort: "asc" | "desc" = "asc";
 
   while (hasMore) {
     console.log(`[${new Date().toLocaleString()}] Fetching page ${page}...`);

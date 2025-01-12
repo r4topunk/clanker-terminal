@@ -7,12 +7,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatAddress } from "@/lib/ethereum";
-import { fetchMultiTokenInfo } from "@/lib/gecko";
 import prisma from "@/lib/prisma";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import React from "react";
-import { Address, isAddressEqual, zeroAddress } from "viem";
 import { buttonVariants } from "../ui/button";
 import Pagination from "./Pagination";
 
